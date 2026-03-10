@@ -104,21 +104,36 @@ button {
     line-height: 1;
 }
 
+.ctds-mode-switch-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid var(--border);
+    padding: 0;
+    overflow: hidden;
+}
+
 .ctds-mode-btn {
     min-width: 50px;
     height: 24px;
-    padding: 0 7px;
-    border: 1px solid var(--border);
+    padding: 0 4px;
+    border: 0;
     font-size: var(--mode-size);
     line-height: 1;
     cursor: pointer;
 }
 
 .ctds-mode-btn + .ctds-mode-btn {
-    margin-left: -1px;
+    margin-left: 0;
 }
 
-.ctds-mode-btn.is-active {
+body .ctds-mode-btn.is-active {
+    background: var(--text);
+    color: var(--single-bg);
+    font-weight: 500;
+}
+
+body.is-multi-pace .ctds-mode-btn.is-active {
     background: var(--text);
     color: var(--multi-bg);
     font-weight: 500;
