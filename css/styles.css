@@ -629,6 +629,12 @@ body.is-multi-pace .ctds-mode-btn.is-active {
     margin-left: -1px;
 }
 
+.ctds-multi-delete-btn {
+    width: 48px;
+    flex-shrink: 0;
+    border-left: none;
+}
+
 .ctds-multi-editor-copy {
     flex: 1 1 50%;
     display: flex;

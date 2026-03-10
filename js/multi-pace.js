@@ -134,6 +134,7 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         selectedZoneLabel: root.querySelector('#selectedZoneLabel'),
         paceInput: root.querySelector('#zonePaceInput'),
         confirmBtn: root.querySelector('#confirmZoneBtn'),
+        deleteBtn: root.querySelector('#multiDeleteZoneBtn'),
         resetBtn: root.querySelector('#multiReset'),
     };
 
@@ -346,6 +347,7 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         if (inEditMode) {
             elements.selectedZoneLabel.textContent = `Z${state.zones.findIndex(zone => zone.id === selected.id) + 1} Pace`;
             elements.paceInput.value = selected.paceSeconds ? formatPace(selected.paceSeconds) : '';
+            elements.deleteBtn.hidden = state.zones.length <= 1;
         } else {
             elements.paceInput.value = '';
         }
@@ -543,6 +545,34 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         render();
     }
 
+    function deleteZone() {
+        const selectedIndex = state.zones.findIndex(zone => zone.id === state.selectedZoneId);
+        if (selectedIndex === -1 || state.zones.length <= 1) {
+            return;
+        }
+
+        const deletedZone = state.zones[selectedIndex];
+
+        // If it's the first zone, the zone below absorbs it
+        if (selectedIndex === 0) {
+            const belowZone = state.zones[1];
+            belowZone.startIndex = deletedZone.startIndex;
+        } 
+        // Otherwise, the zone above absorbs it
+        else {
+            const aboveZone = state.zones[selectedIndex - 1];
+            aboveZone.endIndex = deletedZone.endIndex;
+        }
+
+        state.zones.splice(selectedIndex, 1);
+        state.selectedZoneId = null;
+        state.editing = false;
+        
+        persist();
+        render();
+        announce('Zone deleted returning to overview.');
+    }
+
     function normalizePaceInputValue() {
         const raw = elements.paceInput.value.trim();
         if (!raw) {
@@ -657,6 +687,7 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         elements.addZoneBtn.addEventListener('click', addZone);
         elements.resetBtn.addEventListener('click', reset);
         elements.confirmBtn.addEventListener('click', commitPace);
+        elements.deleteBtn.addEventListener('click', deleteZone);
         elements.paceInput.addEventListener('blur', normalizePaceInputValue);
         elements.paceInput.addEventListener('keydown', event => {
             if (event.key === 'Enter') {
