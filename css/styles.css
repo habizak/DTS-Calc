@@ -2,7 +2,7 @@
     --frame-width: 393px;
     --frame-height: 852px;
     --page-padding-x: 24px;
-    --page-padding-top: 60px;
+    --page-padding-top: max(16px, env(safe-area-inset-top));
     --page-padding-bottom: 24px;
     --section-gap: 16px;
     --single-bg: #c20707;
