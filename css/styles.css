@@ -506,8 +506,8 @@ body.is-multi-pace .ctds-mode-btn.is-active {
 
 .ctds-multi-zone-title-row {
     display: flex;
-    justify-content: space-between;
-    gap: 8px;
+    justify-content: flex-start;
+    gap: 4px;
     font-size: 12px;
     line-height: 1.25;
 }

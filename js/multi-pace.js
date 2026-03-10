@@ -304,7 +304,7 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
                     <span class="ctds-multi-zone-copy">
                         <span class="ctds-multi-zone-title-row">
                             <span class="ctds-multi-zone-title">Z${index + 1}</span>
-                            <span class="ctds-multi-zone-distance">${formatDistance(metrics.distanceKm)}</span>
+                            <span class="ctds-multi-zone-distance">[${formatDistance(metrics.distanceKm)}]</span>
                         </span>
                         <span class="ctds-multi-zone-duration">${metrics.durationText || '\u2014'}</span>
                     </span>
