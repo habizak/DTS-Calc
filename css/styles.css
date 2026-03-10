@@ -1,0 +1,462 @@
+        :root {
+            /* Canvas */
+            --frame-width: 393px;
+            --frame-height: 852px;
+            --safe-padding-top: 24px;
+            --safe-padding-right: 24px;
+            --safe-padding-bottom: 16px;
+            --safe-padding-left: 24px;
+
+            /* Colors */
+            --color-bg: #C20707;
+            --color-text: #FFF;
+            --color-border: #FFF;
+            --color-active-circle-fill: #FFF;
+            --color-active-circle-label: #C20707;
+
+            /* Opacity */
+            --opacity-target: 1;
+            --opacity-nontarget: 0.4;
+
+            /* Fixed sizes (objects never shrink) */
+            --font-family: "Handjet", system-ui, sans-serif;
+            --font-weight-default: 400;
+            --font-size-display: 84px;
+            --font-size-title: 36px;
+            --font-size-label: 20px;
+            --font-size-button: 20px;
+            --toggle-h: 48px;
+            --circle-d: 104px;
+            --label-value-gap: 12px;
+            --time-top-offset: 24px;
+            --toggles-to-circles: 12px;     /* footer rows closer */
+            --circles-bottom: 8px;          /* less air at very bottom */
+            --reset-gap: 12px;              /* gap above reset row */
+            --reset-h: 32px;                /* visual height of reset row */
+            --line-height-display: normal;
+            --line-height-label: normal;
+            --line-height-button: normal;
+            --letter-spacing-display: 0;
+            --letter-spacing-label: 0;
+            --letter-spacing-button: 0;
+            --label-left: 24px;
+            --value-right: 24px;
+            --toggle-mx: 0px;
+            --toggle-gap: 0px;
+            --toggle-bw: 1px;
+            --toggle-br: 0px;
+            --toggle-px: 12px;
+            --toggle-py: 8px;
+            --circle-stroke: 1px;
+
+            /* Footer height = toggles + gap + circles + gap + reset + bottom safe area */
+            --footer-h: calc(
+                var(--toggle-h) + var(--toggles-to-circles) + var(--circle-d) +
+                var(--reset-gap) + var(--reset-h) + var(--circles-bottom) +
+                env(safe-area-inset-bottom, 0)
+            );
+
+            /* One field block's fixed height (label + gap + big number) */
+            --block-h: calc(var(--font-size-label) + var(--label-value-gap) + var(--font-size-display));
+
+            /* Total fixed stack (no inter-block gaps) */
+            --stack-fixed: calc(
+                var(--time-top-offset) + (4 * var(--block-h)) + var(--footer-h) +
+                var(--safe-padding-top) + var(--safe-padding-bottom)
+            );
+
+            /* Remaining height available for the four gaps */
+            --available: calc(min(100dvh, var(--frame-height)) - var(--stack-fixed));
+
+            /* Dynamic gap: share leftover evenly across 4 gaps, cap tighter at 8px */
+            --gap-dynamic: clamp(0px, calc(var(--available) / 4), 8px);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            font-weight: var(--font-weight-default);
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            min-height: auto;
+            padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+        }
+
+        .ctds-app {
+            width: 100%;
+            max-width: var(--frame-width);
+            height: min(100dvh, var(--frame-height));
+            max-height: var(--frame-height);
+            overflow: hidden;
+            margin: 0 auto;
+            padding: var(--safe-padding-top) var(--safe-padding-right) var(--safe-padding-bottom) var(--safe-padding-left);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .ctds-header {
+            font-size: var(--font-size-title);
+            font-weight: var(--font-weight-default);
+            text-transform: uppercase;
+            letter-spacing: var(--letter-spacing-label);
+            line-height: var(--line-height-label);
+        }
+
+        .ctds-main {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            padding-bottom: var(--footer-h);
+        }
+
+        .ctds-controls {
+            padding-bottom: calc(var(--circles-bottom) + env(safe-area-inset-bottom, 0));
+        }
+
+        .ctds-header, .ctds-field, .ctds-controls {
+            flex-shrink: 0;
+        }
+
+        .ctds-field{
+            display:flex;
+            justify-content:flex-end;   /* values hug right rail */
+            align-items:baseline;       /* 20px label + 84px value share baseline */
+            gap:12px;                   /* spec gap */
+            min-width:0;                /* iOS Safari flex-shrink fix */
+            padding: 0;
+        }
+
+        .ctds-field--time {
+            margin-top: var(--time-top-offset);
+            margin-bottom: var(--gap-dynamic);
+        }
+
+        .ctds-field--distance {
+            margin-bottom: var(--gap-dynamic);
+        }
+
+
+        .ctds-field--speed {
+            margin-bottom: var(--gap-dynamic);
+        }
+
+        .ctds-label{
+            font-size: var(--font-size-label);
+            font-weight: var(--font-weight-default);
+            text-transform: uppercase;
+            letter-spacing: var(--letter-spacing-label);
+            line-height: 1;
+            position: relative; top: 1px;   /* Handjet baseline nudge */
+            white-space: nowrap;
+            margin-left: var(--label-left);
+            margin-bottom: 0;
+        }
+
+        .ctds-value{
+            font-family: var(--font-family);
+            font-size: var(--font-size-display);
+            font-weight: var(--font-weight-default);
+            letter-spacing: var(--letter-spacing-display);
+            line-height: 1;
+            text-align: right;
+            direction: ltr;
+            margin-right: 0px;
+            background: transparent;
+            border: none;
+            color: var(--color-text);
+            outline: none;
+            /* Flex row sizing: hug content, never spill the rail */
+            flex: 0 1 auto;
+            min-width: 0;           /* iOS Safari shrink fix */
+            max-width: 100%;
+            width: auto;            /* kill previous width hacks */
+            font-variant-numeric: tabular-nums;
+            padding-inline-end: 0.1ch;  /* caret safety */
+            overflow: hidden;           /* guard sub-px spill */
+        }
+
+        .ctds-value::placeholder {
+            color: var(--color-text);
+            opacity: 0.6;
+        }
+
+        .ctds-value:focus {
+            outline: 2px solid rgba(255, 255, 255, 0.3);
+            outline-offset: 2px;
+        }
+
+        .ctds-field.is-target .ctds-value {
+            opacity: var(--opacity-target);
+            cursor: not-allowed;
+        }
+
+        .ctds-field.is-nontarget .ctds-value {
+            opacity: var(--opacity-nontarget);
+        }
+
+        .ctds-toggle-row {
+            display: flex;
+            margin: 0 var(--toggle-mx);
+            margin-bottom: var(--toggles-to-circles);
+            gap: var(--toggle-gap);
+        }
+
+        .ctds-toggle {
+            flex: 1;
+            height: var(--toggle-h);
+            background: transparent;
+            border: var(--toggle-bw) solid var(--color-border);
+            border-radius: var(--toggle-br);
+            color: var(--color-text);
+            font-family: var(--font-family);
+            font-size: var(--font-size-button);
+            font-weight: var(--font-weight-default);
+            text-transform: uppercase;
+            letter-spacing: var(--letter-spacing-button);
+            line-height: var(--line-height-button);
+            padding: var(--toggle-py) var(--toggle-px);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            min-width: 48px;
+            min-height: 48px;
+        }
+
+        .ctds-toggle:focus {
+            outline: 2px solid rgba(255, 255, 255, 0.8);
+            outline-offset: 2px;
+        }
+
+        .ctds-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .ctds-toggle:active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .ctds-circles {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0 var(--toggle-mx);
+        }
+
+        .ctds-circle {
+            width: var(--circle-d);
+            height: var(--circle-d);
+            border-radius: 50%;
+            border: var(--circle-stroke) solid var(--color-border);
+            background: transparent;
+            color: var(--color-text);
+            font-family: var(--font-family);
+            font-size: var(--font-size-button);
+            font-weight: var(--font-weight-default);
+            text-transform: uppercase;
+            letter-spacing: var(--letter-spacing-button);
+            line-height: var(--line-height-button);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            min-width: 48px;
+            min-height: 48px;
+        }
+
+        .ctds-circle:focus {
+            outline: 2px solid rgba(255, 255, 255, 0.8);
+            outline-offset: 2px;
+        }
+
+        .ctds-circle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .ctds-circle.is-active {
+            background-color: var(--color-active-circle-fill);
+            color: var(--color-active-circle-label);
+        }
+
+        @supports (position: sticky) {
+            .ctds-controls {
+                position: sticky;
+                bottom: env(safe-area-inset-bottom, 0);
+            }
+        }
+
+        @supports not (height: 100dvh) {
+            .ctds-app { height: min(100vh, var(--frame-height)); }
+            :root { --available: calc(min(100vh, var(--frame-height)) - var(--stack-fixed)); }
+        }
+
+        /* Remove default focus rings on pills/circles, but keep them for keyboards via :focus-visible */
+        .ctds-toggle:focus,
+        .ctds-circle:focus {
+            outline: none;
+        }
+        .ctds-toggle:focus-visible,
+        .ctds-circle:focus-visible {
+            outline: 1px solid rgba(255,255,255,.75);
+            outline-offset: 2px;
+        }
+
+        /* widen the frame on desktop, keep mobile spec */
+        :root { --frame-width: clamp(393px, 92vw, 448px); }
+
+        /* Add field spacing back */
+        .ctds-field--time {
+            margin-top: var(--time-top-offset);
+            margin-bottom: var(--gap-dynamic);
+        }
+
+        .ctds-field--distance {
+            margin-bottom: var(--gap-dynamic);
+        }
+
+        .ctds-field--speed {
+            margin-bottom: var(--gap-dynamic);
+        }
+
+        .ctds-field--pace {
+            margin-bottom: var(--gap-dynamic);
+        }
+
+        /* Toggle row borders: 2-button layout */
+        .ctds-toggle-row .ctds-toggle{ border:1px solid #FFF; }
+        .ctds-toggle-row .ctds-toggle + .ctds-toggle{
+            border-left:none; box-shadow: inset 1px 0 0 0 #FFF;
+        }
+
+        /* --- Safety neutralizers --- */
+        .ctds-field{ grid-template-columns: unset !important; }
+        .ctds-field .ctds-value{ width: auto !important; }
+
+        /* --- Footer layout: stack on mobile, spread on wide --- */
+
+        /* 1) make the footer itself a flex container with a vertical stack by default */
+        .ctds-controls{
+            display:flex;
+            flex-direction:column;
+            gap: var(--toggles-to-circles);     /* keep your 24px token */
+            padding-inline: var(--toggle-mx);   /* same 24px side insets */
+        }
+
+        /* 2) make each inner block flex nicely */
+        .ctds-toggle-row,
+        .ctds-circles{
+            flex: 1 1 auto;     /* allows them to grow/shrink */
+            margin-inline: 0;   /* kill previous inline margins so flex can rule */
+            width: auto;
+        }
+
+        /* keep existing behavior inside each row */
+        .ctds-toggle-row{ display:flex; }
+        .ctds-circles{ display:flex; justify-content: space-between; align-items:center; }
+
+
+        /* Footer stays stacked: toggles row on top, circles on bottom, full width */
+        .ctds-controls{ flex-direction: column; }
+        .ctds-toggle-row, .ctds-circles{ width: 100%; }
+        .ctds-toggle-row .ctds-toggle{ flex: 1 1 0; }
+
+        /* Pin footer to bottom on mobile and desktop */
+        .ctds-app { position: relative; }
+        .ctds-controls {
+            position: absolute;
+            left: var(--safe-padding-left);
+            right: var(--safe-padding-right);
+            bottom: env(safe-area-inset-bottom, 0);
+        }
+
+        /* Distance value box: compact, stable width ~ just enough for 99.99 */
+        .ctds-field--distance > .ctds-value{
+            inline-size: 5ch !important;     /* approx width for 99.99 */
+            max-inline-size: 100%;
+        }
+
+        /* Speed value box: compact, stable width for MM:SS or 00.00 */
+        .ctds-field--speed > .ctds-value{
+            inline-size: 5ch !important;
+            max-inline-size: 100%;
+        }
+
+        /* Time value box: compact, stable width for HH:MM:SS */
+        .ctds-field--time > .ctds-value{
+            inline-size: 7.5ch !important;   /* fits 00:00:00 comfortably */
+            max-inline-size: 100%;
+        }
+
+        /* Pace value box: compact, stable width for MM:SS */
+        .ctds-field--pace > .ctds-value{
+            inline-size: 5ch !important;     /* fits 00:00 comfortably */
+            max-inline-size: 100%;
+        }
+
+        /* Reset button styling */
+        .ctds-reset {
+            margin-top: var(--reset-gap);
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .ctds-reset-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+            border: none;
+            color: var(--color-text);
+            font-family: var(--font-family);
+            font-size: var(--font-size-button);
+            font-weight: var(--font-weight-default);
+            text-transform: uppercase;
+            letter-spacing: var(--letter-spacing-button);
+            line-height: var(--line-height-button);
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+            padding: 8px 0;
+            min-height: var(--reset-h);
+        }
+
+        .ctds-reset-btn:hover {
+            opacity: 0.7;
+        }
+
+        .ctds-reset-btn:focus { outline: none; }
+        .ctds-reset-btn:focus-visible {
+            outline: 1px solid rgba(255,255,255,.75);
+            outline-offset: 2px;
+        }
+
+        .ctds-reset .material-symbols-outlined {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        /* Toggle button active states */
+        .ctds-toggle.is-active {
+            background-color: var(--color-active-circle-fill);
+            color: var(--color-active-circle-label);
+        }
+
+        /* Label colors */
+        .ctds-field--distance .ctds-label,
+        .ctds-field--speed .ctds-label,
+        .ctds-field--pace .ctds-label{ color:#FFC7C7; }
+
+        /* High-contrast user preference: ensure sufficient contrast for pink labels */
+        @media (prefers-contrast: more){
+            .ctds-field--distance .ctds-label,
+            .ctds-field--speed .ctds-label,
+            .ctds-field--pace .ctds-label { color:#FFF; }
+        }
+    @media (max-width: 480px) {
+      :root { --circle-d: 88px; }
+    }
