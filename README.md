@@ -1,6 +1,6 @@
 # DTS-Calc
 
-**Distance–Time–Speed calculator for runners.** Enter any two of time, distance, speed, or pace; the third is computed. Choose which value is the target (Time, Distance, or Speed/Pace). Metric and imperial units. Offline-first, single HTML file. Mobile-first layout with responsive design.
+**Distance–Time–Speed calculator for runners.** Enter any two of time, distance, speed, or pace; the third is computed. Choose which value is the target (Time, Distance, or Speed/Pace). Metric and imperial units. Offline-first, static HTML with modular ES modules. Mobile-first layout with responsive design.
 
 ## Features
 
@@ -17,7 +17,7 @@
 
 | Layer | Technology |
 |-------|------------|
-| UI | Single HTML file, vanilla JS |
+| UI | Static HTML, vanilla JS ES modules |
 | Styling | CSS custom properties, Handjet font |
 | Persistence | localStorage |
 | Hosting | Vercel (static) |
@@ -33,30 +33,40 @@ flowchart TB
         Reset[Reset Button]
     end
 
-    subgraph Logic [PaceCalculator]
-        Compute[compute]
-        Normalize[normalizeInput]
-        Convert[convertUnits]
+    subgraph Logic [JS Modules]
+        Calculator[calculator.js / PaceCalculator]
+        Normalize[normalize.js]
+        Convert[convert.js]
+        MultiPace[multi-pace.js]
     end
 
     subgraph Storage [Local Storage]
         LS[(localStorage)]
     end
 
-    Fields --> Compute
-    Toggles --> Convert
-    Circles --> Compute
-    Reset --> Logic
-    Compute --> LS
-    Logic --> Fields
+    Fields --> Calculator
+    Toggles --> Calculator
+    Circles --> Calculator
+    Reset --> Calculator
+    Calculator --> Normalize
+    Calculator --> Convert
+    Calculator --> LS
+    Calculator --> Fields
 ```
 
 ## Directory Structure
 
 ```
 DTS-Calc/
-├── dts-calc.html    # Single-file app (HTML, CSS, JS)
-├── vercel.json      # Vercel rewrites (root → dts-calc.html)
+├── index.html       # App entrypoint
+├── css/
+│   └── styles.css   # Extracted app styles
+├── js/
+│   ├── calculator.js
+│   ├── normalize.js
+│   ├── convert.js
+│   └── multi-pace.js
+├── vercel.json      # Vercel rewrites (root → index.html)
 └── README.md
 ```
 
@@ -64,7 +74,7 @@ DTS-Calc/
 
 | Route | Purpose |
 |-------|---------|
-| `/` | Main calculator (rewrites to `dts-calc.html`) |
+| `/` | Main calculator (rewrites to `index.html`) |
 
 ## Data Flow and Compute Model
 
@@ -87,11 +97,11 @@ DTS-Calc/
 
 ```bash
 # Option 1: Open directly
-open dts-calc.html
+open index.html
 
 # Option 2: Local server (e.g. Python)
 python3 -m http.server 8000
-# Visit http://localhost:8000/dts-calc.html
+# Visit http://localhost:8000/index.html
 ```
 
 **Deploy to Vercel:**
@@ -100,4 +110,4 @@ python3 -m http.server 8000
 vercel
 ```
 
-`vercel.json` rewrites `/` to `/dts-calc.html`.
+`vercel.json` rewrites `/` to `/index.html`.
