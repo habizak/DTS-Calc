@@ -10,6 +10,7 @@ function createZoneId() {
 }
 
 function clamp(value, min, max) {
+    if (Number.isNaN(value)) return min;
     return Math.max(min, Math.min(max, value));
 }
 
@@ -570,6 +571,9 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         const rightZone = initialZones[leftIndex + 1];
         const totalSpan = rightZone.endIndex - leftZone.startIndex + 1;
         const panelHeight = elements.zones.getBoundingClientRect().height;
+        if (panelHeight <= 0) {
+            return;
+        }
         const deltaSegments = Math.round(((clientY - startY) / panelHeight) * state.segments.length);
 
         let leftSpan = (leftZone.endIndex - leftZone.startIndex + 1) + deltaSegments;
