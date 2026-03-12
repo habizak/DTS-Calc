@@ -458,7 +458,6 @@ body.is-multi-pace .ctds-mode-btn.is-active {
     min-height: 1px;
     border-left: none;
     background: var(--text);
-    transition: opacity 120ms ease;
 }
 
 .ctds-multi-boundary {

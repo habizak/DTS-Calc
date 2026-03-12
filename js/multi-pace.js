@@ -285,42 +285,28 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         });
 
         elements.chartRegion.appendChild(barWrap);
-        renderBoundaryRules();
     }
 
     function renderBoundaryRules() {
         elements.chartRegion.querySelectorAll('.ctds-multi-boundary').forEach(el => el.remove());
 
-        const totalSegments = state.segments.length;
-        if (!totalSegments) return;
+        const chartRect = elements.chartRegion.getBoundingClientRect();
+        if (!chartRect.height) return;
 
-        state.zones.slice(1).forEach(zone => {
+        const dividers = elements.zones.querySelectorAll('.ctds-multi-divider');
+        dividers.forEach(divider => {
+            const dividerRect = divider.getBoundingClientRect();
+            const topPx = dividerRect.top + dividerRect.height / 2 - chartRect.top;
+            const topPct = (topPx / chartRect.height) * 100;
+
             const rule = document.createElement('div');
             rule.className = 'ctds-multi-boundary';
-            const topPct = (zone.startIndex / totalSegments) * 100;
             rule.style.top = `${topPct}%`;
             elements.chartRegion.appendChild(rule);
         });
     }
 
-    function highlightZone(zoneIndex) {
-        const bars = elements.chartRegion.querySelectorAll('.ctds-multi-bar');
-        const zone = state.zones[zoneIndex];
-        if (!zone) return;
 
-        bars.forEach((bar, i) => {
-            if (i >= zone.startIndex && i <= zone.endIndex) {
-                bar.style.opacity = '1';
-            } else {
-                bar.style.opacity = '0.25';
-            }
-        });
-    }
-
-    function clearHighlight() {
-        const bars = elements.chartRegion.querySelectorAll('.ctds-multi-bar');
-        bars.forEach(bar => { bar.style.opacity = '1'; });
-    }
 
     function renderZones() {
         elements.zones.innerHTML = '';
@@ -402,13 +388,6 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
                 renderChart();
                 renderZones();
                 renderBoundaryRules();
-                if (state.editing && state.selectedZoneId) {
-                    highlightZone(state.zones.findIndex(z => z.id === state.selectedZoneId));
-                } else if (state.dragging) {
-                    highlightZone(state.dragging.leftIndex);
-                } else {
-                    clearHighlight();
-                }
             }));
             renderTotal();
         } else {
@@ -544,7 +523,6 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         state.editing = false;
         persist();
         render();
-        clearHighlight();
     }
 
     function selectZone(zoneId) {
@@ -572,7 +550,6 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         showWarning('');
         persist();
         render();
-        clearHighlight();
     }
 
     function commitPace() {
@@ -588,7 +565,6 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         state.editing = false;
         persist();
         render();
-        clearHighlight();
     }
 
     function deleteZone() {
@@ -616,7 +592,6 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         
         persist();
         render();
-        clearHighlight();
         announce('Zone deleted returning to overview.');
     }
 
@@ -638,34 +613,42 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
 
         state.dragging = {
             leftIndex,
-            startY: clientY,
-            initialZones: cloneState(state.zones),
+            lastY: clientY,
         };
-        highlightZone(leftIndex);
     }
 
     function moveDrag(clientY) {
-        if (!state.dragging) {
-            return;
-        }
+        if (!state.dragging) return;
 
-        const { leftIndex, startY, initialZones } = state.dragging;
-        const leftZone = initialZones[leftIndex];
-        const rightZone = initialZones[leftIndex + 1];
-        const totalSpan = rightZone.endIndex - leftZone.startIndex + 1;
+        const { leftIndex, lastY } = state.dragging;
+        const deltaY = clientY - lastY;
+
         const panelHeight = elements.zones.getBoundingClientRect().height;
-        const deltaSegments = Math.round(((clientY - startY) / panelHeight) * state.segments.length);
+        const deltaSegments = Math.round((deltaY / panelHeight) * state.segments.length);
 
-        let leftSpan = (leftZone.endIndex - leftZone.startIndex + 1) + deltaSegments;
-        leftSpan = clamp(leftSpan, MIN_ZONE_SEGMENTS, totalSpan - MIN_ZONE_SEGMENTS);
+        if (deltaSegments === 0) return;
 
-        const nextBoundary = leftZone.startIndex + leftSpan - 1;
-        state.zones[leftIndex].endIndex = nextBoundary;
-        state.zones[leftIndex + 1].startIndex = nextBoundary + 1;
+        const above = state.zones[leftIndex];
+        const below = state.zones[leftIndex + 1];
+
+        const newAboveEnd = above.endIndex + deltaSegments;
+        const newBelowStart = below.startIndex + deltaSegments;
+
+        if (
+            newAboveEnd - above.startIndex + 1 < MIN_ZONE_SEGMENTS ||
+            below.endIndex - newBelowStart + 1 < MIN_ZONE_SEGMENTS
+        ) return;
+
+        above.endIndex = newAboveEnd;
+        below.startIndex = newBelowStart;
+
+        // Update lastY only when a move actually happened
+        state.dragging.lastY = clientY;
+
         renderZones();
+        renderBoundaryRules();
         syncFooter();
         renderTotal();
-        renderBoundaryRules();
     }
 
     function endDrag() {
@@ -676,7 +659,6 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         state.dragging = null;
         persist();
         render();
-        clearHighlight();
     }
 
     function handlePointerDown(event) {
