@@ -16,8 +16,10 @@
             <span class="ctds-header-title">/DTS-Calc</span>
             <div class="ctds-mode-toggle" aria-label="Mode toggle">
                 <span class="ctds-mode-label">Pace</span>
-                <button class="ctds-mode-btn is-active" id="modeSingle" type="button">Single</button>
-                <button class="ctds-mode-btn" id="modeMulti" type="button">Multi</button>
+                <div class="ctds-mode-switch-group" role="group">
+                    <button class="ctds-mode-btn is-active" id="modeSingle" type="button">Single</button>
+                    <button class="ctds-mode-btn" id="modeMulti" type="button">Multi</button>
+                </div>
             </div>
         </header>
 
@@ -138,6 +140,7 @@
                                aria-label="Zone pace">
                     </div>
                     <button class="ctds-action-btn ctds-action-btn--active" id="confirmZoneBtn" type="button">Confirm</button>
+                    <button class="ctds-action-btn ctds-multi-delete-btn" id="multiDeleteZoneBtn" type="button" aria-label="Delete Zone">✕</button>
                 </div>
 
                 <div class="ctds-reset ctds-reset--multi" id="multiResetRow">

@@ -134,6 +134,7 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         selectedZoneLabel: root.querySelector('#selectedZoneLabel'),
         paceInput: root.querySelector('#zonePaceInput'),
         confirmBtn: root.querySelector('#confirmZoneBtn'),
+        deleteBtn: root.querySelector('#multiDeleteZoneBtn'),
         resetBtn: root.querySelector('#multiReset'),
     };
 
@@ -279,11 +280,46 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
             const bar = document.createElement('div');
             bar.className = 'ctds-multi-bar';
             const ratio = fallback ? 0.5 : segment.heightRatio;
-            bar.style.height = `${clamp(ratio, 0.12, 1) * 100}%`;
+            bar.style.width = `${clamp(ratio, 0.12, 1) * 100}%`;
             barWrap.appendChild(bar);
         });
 
         elements.chartRegion.appendChild(barWrap);
+        renderBoundaryRules();
+    }
+
+    function renderBoundaryRules() {
+        elements.chartRegion.querySelectorAll('.ctds-multi-boundary').forEach(el => el.remove());
+
+        const totalSegments = state.segments.length;
+        if (!totalSegments) return;
+
+        state.zones.slice(1).forEach(zone => {
+            const rule = document.createElement('div');
+            rule.className = 'ctds-multi-boundary';
+            const topPct = (zone.startIndex / totalSegments) * 100;
+            rule.style.top = `${topPct}%`;
+            elements.chartRegion.appendChild(rule);
+        });
+    }
+
+    function highlightZone(zoneIndex) {
+        const bars = elements.chartRegion.querySelectorAll('.ctds-multi-bar');
+        const zone = state.zones[zoneIndex];
+        if (!zone) return;
+
+        bars.forEach((bar, i) => {
+            if (i >= zone.startIndex && i <= zone.endIndex) {
+                bar.style.opacity = '1';
+            } else {
+                bar.style.opacity = '0.25';
+            }
+        });
+    }
+
+    function clearHighlight() {
+        const bars = elements.chartRegion.querySelectorAll('.ctds-multi-bar');
+        bars.forEach(bar => { bar.style.opacity = '1'; });
     }
 
     function renderZones() {
@@ -303,8 +339,8 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
                 <span class="ctds-multi-zone-inner">
                     <span class="ctds-multi-zone-copy">
                         <span class="ctds-multi-zone-title-row">
-                            <span class="ctds-multi-zone-title">Zone ${index + 1}</span>
-                            <span class="ctds-multi-zone-distance">${formatDistance(metrics.distanceKm)}</span>
+                            <span class="ctds-multi-zone-title">Z${index + 1}</span>
+                            <span class="ctds-multi-zone-distance">[${formatDistance(metrics.distanceKm)}]</span>
                         </span>
                         <span class="ctds-multi-zone-duration">${metrics.durationText || '\u2014'}</span>
                     </span>
@@ -344,8 +380,9 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         elements.addZoneBtn.disabled = !canAddZone();
 
         if (inEditMode) {
-            elements.selectedZoneLabel.textContent = `Zone ${state.zones.findIndex(zone => zone.id === selected.id) + 1} Pace`;
+            elements.selectedZoneLabel.textContent = `Z${state.zones.findIndex(zone => zone.id === selected.id) + 1} Pace`;
             elements.paceInput.value = selected.paceSeconds ? formatPace(selected.paceSeconds) : '';
+            elements.deleteBtn.hidden = state.zones.length <= 1;
         } else {
             elements.paceInput.value = '';
         }
@@ -361,8 +398,18 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         showWarning(state.warning);
 
         if (hasLoadedState) {
-            renderChart();
-            renderZones();
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                renderChart();
+                renderZones();
+                renderBoundaryRules();
+                if (state.editing && state.selectedZoneId) {
+                    highlightZone(state.zones.findIndex(z => z.id === state.selectedZoneId));
+                } else if (state.dragging) {
+                    highlightZone(state.dragging.leftIndex);
+                } else {
+                    clearHighlight();
+                }
+            }));
             renderTotal();
         } else {
             elements.chartRegion.innerHTML = '';
@@ -446,7 +493,11 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
             state.warning = parsed.hasElevation ? '' : NO_ELEVATION_WARNING;
             state.editing = false;
             persist();
+            
+            // Un-hide the loaded state so measurement works. 
+            // The requestAnimationFrame in render() will ensure the DOM is painted once before chart render runs
             render();
+            
             announce(`Loaded ${file.name}.`);
         } catch (error) {
             showError(error instanceof Error ? error.message : 'Could not parse GPX file.');
@@ -493,6 +544,7 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         state.editing = false;
         persist();
         render();
+        clearHighlight();
     }
 
     function selectZone(zoneId) {
@@ -520,6 +572,7 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         showWarning('');
         persist();
         render();
+        clearHighlight();
     }
 
     function commitPace() {
@@ -535,6 +588,36 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         state.editing = false;
         persist();
         render();
+        clearHighlight();
+    }
+
+    function deleteZone() {
+        const selectedIndex = state.zones.findIndex(zone => zone.id === state.selectedZoneId);
+        if (selectedIndex === -1 || state.zones.length <= 1) {
+            return;
+        }
+
+        const deletedZone = state.zones[selectedIndex];
+
+        // If it's the first zone, the zone below absorbs it
+        if (selectedIndex === 0) {
+            const belowZone = state.zones[1];
+            belowZone.startIndex = deletedZone.startIndex;
+        } 
+        // Otherwise, the zone above absorbs it
+        else {
+            const aboveZone = state.zones[selectedIndex - 1];
+            aboveZone.endIndex = deletedZone.endIndex;
+        }
+
+        state.zones.splice(selectedIndex, 1);
+        state.selectedZoneId = null;
+        state.editing = false;
+        
+        persist();
+        render();
+        clearHighlight();
+        announce('Zone deleted returning to overview.');
     }
 
     function normalizePaceInputValue() {
@@ -558,6 +641,7 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
             startY: clientY,
             initialZones: cloneState(state.zones),
         };
+        highlightZone(leftIndex);
     }
 
     function moveDrag(clientY) {
@@ -581,6 +665,7 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         renderZones();
         syncFooter();
         renderTotal();
+        renderBoundaryRules();
     }
 
     function endDrag() {
@@ -591,6 +676,7 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         state.dragging = null;
         persist();
         render();
+        clearHighlight();
     }
 
     function handlePointerDown(event) {
@@ -651,6 +737,7 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         elements.addZoneBtn.addEventListener('click', addZone);
         elements.resetBtn.addEventListener('click', reset);
         elements.confirmBtn.addEventListener('click', commitPace);
+        elements.deleteBtn.addEventListener('click', deleteZone);
         elements.paceInput.addEventListener('blur', normalizePaceInputValue);
         elements.paceInput.addEventListener('keydown', event => {
             if (event.key === 'Enter') {
