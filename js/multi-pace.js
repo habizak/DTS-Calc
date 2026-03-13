@@ -739,6 +739,25 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         }
 
         startDrag(divider.dataset.leftZoneId, touch.clientY);
+
+        function onTouchMove(e) {
+            e.preventDefault();
+            const t = e.touches[0];
+            if (t) {
+                moveDrag(t.clientY);
+            }
+        }
+
+        function onTouchEnd() {
+            endDrag();
+            divider.removeEventListener('touchmove', onTouchMove);
+            divider.removeEventListener('touchend', onTouchEnd);
+            divider.removeEventListener('touchcancel', onTouchEnd);
+        }
+
+        divider.addEventListener('touchmove', onTouchMove, { passive: false });
+        divider.addEventListener('touchend', onTouchEnd, { passive: true });
+        divider.addEventListener('touchcancel', onTouchEnd, { passive: true });
     }
 
     function handleTouchMove(event) {
@@ -786,9 +805,6 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         elements.zones.addEventListener('touchstart', handleTouchStart, { passive: false });
         window.addEventListener('mousemove', event => moveDrag(event.clientY));
         window.addEventListener('mouseup', endDrag);
-        elements.zones.addEventListener('touchmove', handleTouchMove, { passive: false });
-        window.addEventListener('touchend', endDrag, { passive: true });
-        window.addEventListener('touchcancel', endDrag, { passive: true });
         listenersBound = true;
     }
 
