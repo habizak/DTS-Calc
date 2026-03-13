@@ -10,6 +10,7 @@ function createZoneId() {
 }
 
 function clamp(value, min, max) {
+    if (Number.isNaN(value)) return min;
     return Math.max(min, Math.min(max, value));
 }
 
@@ -116,6 +117,7 @@ function ensureValidZones(zones, segmentCount) {
 }
 
 export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
+    const doc = root.ownerDocument;
     const elements = {
         emptyState: root.querySelector('#multiEmptyState'),
         loadedState: root.querySelector('#multiLoadedState'),
@@ -128,14 +130,15 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         uploadGpxBtn: root.querySelector('#uploadGpxBtn'),
         uploadMultiBtn: root.querySelector('#multiUploadBtn'),
         addZoneBtn: root.querySelector('#addZoneBtn'),
+        deleteZoneBtn: root.querySelector('#deleteZoneBtn'),
         fileInput: root.querySelector('#gpxFileInput'),
         actionRow: root.querySelector('#multiActionRow'),
-        editorRow: root.querySelector('#multiEditorRow'),
-        selectedZoneLabel: root.querySelector('#selectedZoneLabel'),
-        paceInput: root.querySelector('#zonePaceInput'),
-        confirmBtn: root.querySelector('#confirmZoneBtn'),
-        deleteBtn: root.querySelector('#multiDeleteZoneBtn'),
         resetBtn: root.querySelector('#multiReset'),
+        sheet: doc.getElementById('mpSheet'),
+        sheetBackdrop: doc.getElementById('mpSheetBackdrop'),
+        sheetLabel: doc.getElementById('mpSheetLabel'),
+        sheetInput: doc.getElementById('mpSheetInput'),
+        sheetConfirm: doc.getElementById('mpSheetConfirm'),
     };
 
     const state = {
@@ -357,21 +360,12 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
     }
 
     function syncFooter() {
-        const selected = getSelectedZone();
         const hasLoadedState = Boolean(state.route && state.segments.length);
-        const inEditMode = hasLoadedState && state.editing && selected;
+        const showDelete = hasLoadedState && state.selectedZoneId != null && state.zones.length > 1;
 
-        elements.actionRow.hidden = !hasLoadedState || inEditMode;
-        elements.editorRow.hidden = !inEditMode;
+        elements.actionRow.hidden = !hasLoadedState;
         elements.addZoneBtn.disabled = !canAddZone();
-
-        if (inEditMode) {
-            elements.selectedZoneLabel.textContent = `Z${state.zones.findIndex(zone => zone.id === selected.id) + 1} Pace`;
-            elements.paceInput.value = selected.paceSeconds ? formatPace(selected.paceSeconds) : '';
-            elements.deleteBtn.hidden = state.zones.length <= 1;
-        } else {
-            elements.paceInput.value = '';
-        }
+        elements.deleteZoneBtn.hidden = !showDelete;
     }
 
     function render() {
@@ -525,16 +519,38 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         render();
     }
 
+    function closeSheet() {
+        elements.sheet.classList.remove('is-open');
+        elements.sheetBackdrop.classList.remove('is-open');
+
+        setTimeout(() => {
+            elements.sheet.hidden = true;
+            elements.sheetBackdrop.hidden = true;
+        }, 200);
+    }
+
     function selectZone(zoneId) {
-        if (!state.zones.some(zone => zone.id === zoneId)) {
-            return;
-        }
+        if (!state.zones.some(zone => zone.id === zoneId)) return;
+
+        const index = state.zones.findIndex(z => z.id === zoneId);
+        const zone = state.zones[index];
 
         state.selectedZoneId = zoneId;
         state.editing = true;
+
+        elements.sheetLabel.textContent = `Z${index + 1} Pace`;
+        elements.sheetInput.value = zone.paceSeconds ? formatPace(zone.paceSeconds) : '';
+        elements.sheet.hidden = false;
+        elements.sheetBackdrop.hidden = false;
+
+        requestAnimationFrame(() => {
+            elements.sheet.classList.add('is-open');
+            elements.sheetBackdrop.classList.add('is-open');
+            elements.sheetInput.focus();
+        });
+
         persist();
         render();
-        requestAnimationFrame(() => elements.paceInput.focus());
     }
 
     function reset() {
@@ -555,14 +571,18 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
     function commitPace() {
         const selected = getSelectedZone();
         if (!selected) {
+            closeSheet();
             return;
         }
 
-        const normalized = normalizePace(elements.paceInput.value || '0:0');
+        const normalized = normalizePace(elements.sheetInput.value || '0:0');
         const [minutes, seconds] = normalized.split(':').map(Number);
         const totalSeconds = minutes * 60 + seconds;
         selected.paceSeconds = totalSeconds > 0 ? totalSeconds : null;
+
         state.editing = false;
+        state.selectedZoneId = null;
+        closeSheet();
         persist();
         render();
     }
@@ -596,13 +616,13 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
     }
 
     function normalizePaceInputValue() {
-        const raw = elements.paceInput.value.trim();
+        const raw = elements.sheetInput.value.trim();
         if (!raw) {
             return;
         }
 
         const converted = /^\d+$/.test(raw) ? parseDigitsToPace(raw) : raw;
-        elements.paceInput.value = normalizePace(converted);
+        elements.sheetInput.value = normalizePace(converted);
     }
 
     function startDrag(zoneId, clientY) {
@@ -624,6 +644,9 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         const deltaY = clientY - lastY;
 
         const panelHeight = elements.zones.getBoundingClientRect().height;
+        if (panelHeight <= 0) {
+            return;
+        }
         const deltaSegments = Math.round((deltaY / panelHeight) * state.segments.length);
 
         if (deltaSegments === 0) return;
@@ -657,6 +680,37 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         }
 
         state.dragging = null;
+        persist();
+        render();
+    }
+
+    function deleteZone() {
+        const selected = getSelectedZone();
+        if (!selected || state.zones.length <= 1) {
+            closeSheet();
+            return;
+        }
+
+        closeSheet();
+
+        const index = state.zones.findIndex(z => z.id === state.selectedZoneId);
+        if (index < 0) {
+            render();
+            return;
+        }
+
+        const zoneToRemove = state.zones[index];
+        if (index === 0) {
+            state.zones[1].startIndex = zoneToRemove.startIndex;
+            state.zones.splice(0, 1);
+            state.selectedZoneId = state.zones[0].id;
+        } else {
+            state.zones[index - 1].endIndex = zoneToRemove.endIndex;
+            state.zones.splice(index, 1);
+            state.selectedZoneId = state.zones[Math.min(index - 1, state.zones.length - 1)].id;
+        }
+
+        state.editing = false;
         persist();
         render();
     }
@@ -717,16 +771,14 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         elements.uploadMultiBtn.addEventListener('click', openFilePicker);
         elements.fileInput.addEventListener('change', handleFileSelect);
         elements.addZoneBtn.addEventListener('click', addZone);
+        elements.deleteZoneBtn.addEventListener('click', deleteZone);
         elements.resetBtn.addEventListener('click', reset);
-        elements.confirmBtn.addEventListener('click', commitPace);
-        elements.deleteBtn.addEventListener('click', deleteZone);
-        elements.paceInput.addEventListener('blur', normalizePaceInputValue);
-        elements.paceInput.addEventListener('keydown', event => {
-            if (event.key === 'Enter') {
-                normalizePaceInputValue();
-                commitPace();
-            }
+        elements.sheetConfirm.addEventListener('click', commitPace);
+        elements.sheetBackdrop.addEventListener('click', commitPace);
+        elements.sheetInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') commitPace();
         });
+        elements.sheetInput.addEventListener('blur', normalizePaceInputValue);
         elements.zones.addEventListener('click', handleZoneClick);
         elements.zones.addEventListener('mousedown', handlePointerDown);
         elements.zones.addEventListener('touchstart', handleTouchStart, { passive: true });
