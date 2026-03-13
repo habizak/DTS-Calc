@@ -786,7 +786,7 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         elements.zones.addEventListener('touchstart', handleTouchStart, { passive: false });
         window.addEventListener('mousemove', event => moveDrag(event.clientY));
         window.addEventListener('mouseup', endDrag);
-        window.addEventListener('touchmove', handleTouchMove, { passive: false });
+        elements.zones.addEventListener('touchmove', handleTouchMove, { passive: false });
         window.addEventListener('touchend', endDrag, { passive: true });
         window.addEventListener('touchcancel', endDrag, { passive: true });
         listenersBound = true;
