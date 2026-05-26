@@ -25,7 +25,7 @@
 | Layer | Technology |
 |-------|------------|
 | UI | Static HTML, vanilla JS ES modules |
-| Styling | CSS custom properties, Handjet font |
+| Styling | CSS custom properties, JetBrains Mono font |
 | Persistence | localStorage |
 | Hosting | Vercel (static) |
 
