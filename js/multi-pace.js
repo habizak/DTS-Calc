@@ -97,6 +97,7 @@ function ensureValidZones(zones, segmentCount) {
             startIndex: Number(zone.startIndex),
             endIndex: Number(zone.endIndex),
             paceSeconds: Number.isFinite(zone.paceSeconds) ? zone.paceSeconds : null,
+            name: typeof zone.name === 'string' ? (zone.name.trim() || null) : null,
         }))
         .sort((a, b) => a.startIndex - b.startIndex);
 
@@ -125,6 +126,7 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         zones: root.querySelector('#multiZones'),
         totalRow: root.querySelector('#multiTotalRow'),
         totalTime: root.querySelector('#multiTotalTime'),
+        totalDistance: root.querySelector('#multiTotalDistance'),
         error: root.querySelector('#multiError'),
         warning: root.querySelector('#multiWarning'),
         uploadGpxBtn: root.querySelector('#uploadGpxBtn'),
@@ -138,7 +140,10 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         sheetBackdrop: doc.getElementById('mpSheetBackdrop'),
         sheetLabel: doc.getElementById('mpSheetLabel'),
         sheetInput: doc.getElementById('mpSheetInput'),
+        sheetNameInput: doc.getElementById('mpSheetNameInput'),
         sheetConfirm: doc.getElementById('mpSheetConfirm'),
+        tooltip: root.querySelector('#mpChartTooltip'),
+        tooltipValue: root.querySelector('#mpChartTooltipValue'),
     };
 
     const state = {
@@ -150,6 +155,7 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         error: '',
         editing: false,
         dragging: null,
+        sheetMode: 'pace',
     };
 
     let listenersBound = false;
@@ -271,13 +277,18 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
     }
 
     function renderChart() {
+        const tooltip = elements.tooltip;
         elements.chartRegion.innerHTML = '';
+        if (tooltip) {
+            elements.chartRegion.appendChild(tooltip);
+        }
 
         const barWrap = document.createElement('div');
         barWrap.className = 'ctds-multi-chart-bars';
 
         const heights = state.segments.map(segment => segment.heightRatio);
         const fallback = heights.every(value => value === 0);
+        const bars = [];
 
         state.segments.forEach(segment => {
             const bar = document.createElement('div');
@@ -285,9 +296,36 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
             const ratio = fallback ? 0.5 : segment.heightRatio;
             bar.style.width = `${clamp(ratio, 0.12, 1) * 100}%`;
             barWrap.appendChild(bar);
+            bars.push(bar);
         });
 
         elements.chartRegion.appendChild(barWrap);
+
+        bars.forEach((bar, i) => {
+            const segment = state.segments[i];
+            if (segment.elevationDelta == null || segment.distanceKm <= 0) return;
+
+            const gradient = (segment.elevationDelta / (segment.distanceKm * 1000)) * 100;
+            const label = `${gradient >= 0 ? '+' : ''}${gradient.toFixed(1)}%`;
+
+            function showTooltip() {
+                elements.tooltipValue.textContent = label;
+                elements.tooltip.hidden = false;
+                elements.tooltip.style.top = `${bar.offsetTop + bar.offsetHeight / 2}px`;
+            }
+
+            function hideTooltip() {
+                elements.tooltip.hidden = true;
+            }
+
+            bar.addEventListener('mouseenter', showTooltip);
+            bar.addEventListener('mouseleave', hideTooltip);
+            bar.addEventListener('touchstart', e => {
+                e.preventDefault();
+                showTooltip();
+                setTimeout(hideTooltip, 1500);
+            }, { passive: false });
+        });
     }
 
     function renderBoundaryRules() {
@@ -324,11 +362,12 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
             zoneButton.style.flex = `${zone.endIndex - zone.startIndex + 1} 1 0`;
 
             const metrics = getZoneMetrics(zone);
+            const zoneLabel = zone.name || `Z${index + 1}`;
             zoneButton.innerHTML = `
                 <span class="ctds-multi-zone-inner">
                     <span class="ctds-multi-zone-copy">
                         <span class="ctds-multi-zone-title-row">
-                            <span class="ctds-multi-zone-title">Z${index + 1}</span>
+                            <span class="ctds-multi-zone-title" data-zone-id="${zone.id}" data-action="rename">${zoneLabel}</span>
                             <span class="ctds-multi-zone-distance">[${formatDistance(metrics.distanceKm)}]</span>
                         </span>
                         <span class="ctds-multi-zone-duration">${metrics.durationText || '\u2014'}</span>
@@ -356,7 +395,10 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
 
     function renderTotal() {
         const total = getTotalDuration();
-        elements.totalTime.textContent = total == null ? '' : formatTotalTime(total);
+        elements.totalTime.textContent = total == null ? '--:--:--' : formatTotalTime(total);
+        elements.totalDistance.textContent = state.route
+            ? `${state.route.totalKm.toFixed(1)}km`
+            : '';
     }
 
     function syncFooter() {
@@ -385,9 +427,15 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
             }));
             renderTotal();
         } else {
+            const tooltip = elements.tooltip;
             elements.chartRegion.innerHTML = '';
+            if (tooltip) {
+                elements.chartRegion.appendChild(tooltip);
+                tooltip.hidden = true;
+            }
             elements.zones.innerHTML = '';
             elements.totalTime.textContent = '';
+            elements.totalDistance.textContent = '';
         }
 
         syncFooter();
@@ -529,6 +577,29 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         }, 200);
     }
 
+    function openNameSheet(zoneId) {
+        if (!state.zones.some(zone => zone.id === zoneId)) return;
+
+        const index = state.zones.findIndex(z => z.id === zoneId);
+        const zone = state.zones[index];
+
+        state.selectedZoneId = zoneId;
+        state.sheetMode = 'name';
+
+        elements.sheetLabel.textContent = `Z${index + 1} Name`;
+        elements.sheetInput.hidden = true;
+        elements.sheetNameInput.hidden = false;
+        elements.sheetNameInput.value = zone.name || '';
+        elements.sheet.hidden = false;
+        elements.sheetBackdrop.hidden = false;
+
+        requestAnimationFrame(() => {
+            elements.sheet.classList.add('is-open');
+            elements.sheetBackdrop.classList.add('is-open');
+            elements.sheetNameInput.focus();
+        });
+    }
+
     function selectZone(zoneId) {
         if (!state.zones.some(zone => zone.id === zoneId)) return;
 
@@ -537,8 +608,11 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
 
         state.selectedZoneId = zoneId;
         state.editing = true;
+        state.sheetMode = 'pace';
 
         elements.sheetLabel.textContent = `Z${index + 1} Pace`;
+        elements.sheetInput.hidden = false;
+        elements.sheetNameInput.hidden = true;
         elements.sheetInput.value = zone.paceSeconds ? formatPace(zone.paceSeconds) : '';
         elements.sheet.hidden = false;
         elements.sheetBackdrop.hidden = false;
@@ -568,18 +642,25 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         render();
     }
 
-    function commitPace() {
-        const selected = getSelectedZone();
-        if (!selected) {
-            closeSheet();
-            return;
+    function commitSheet() {
+        if (state.sheetMode === 'name') {
+            const selected = getSelectedZone();
+            if (selected) {
+                selected.name = elements.sheetNameInput.value.trim() || null;
+            }
+            elements.sheetInput.hidden = false;
+            elements.sheetNameInput.hidden = true;
+        } else {
+            const selected = getSelectedZone();
+            if (selected) {
+                const normalized = normalizePace(elements.sheetInput.value || '0:0');
+                const [minutes, seconds] = normalized.split(':').map(Number);
+                const totalSeconds = minutes * 60 + seconds;
+                selected.paceSeconds = totalSeconds > 0 ? totalSeconds : null;
+            }
         }
 
-        const normalized = normalizePace(elements.sheetInput.value || '0:0');
-        const [minutes, seconds] = normalized.split(':').map(Number);
-        const totalSeconds = minutes * 60 + seconds;
-        selected.paceSeconds = totalSeconds > 0 ? totalSeconds : null;
-
+        state.sheetMode = 'pace';
         state.editing = false;
         state.selectedZoneId = null;
         closeSheet();
@@ -775,6 +856,13 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
     }
 
     function handleZoneClick(event) {
+        const renameTarget = event.target.closest('[data-action="rename"]');
+        if (renameTarget) {
+            event.stopPropagation();
+            openNameSheet(renameTarget.dataset.zoneId);
+            return;
+        }
+
         const zone = event.target.closest('.ctds-multi-zone');
         if (!zone) {
             return;
@@ -794,10 +882,13 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
         elements.addZoneBtn.addEventListener('click', addZone);
         elements.deleteZoneBtn.addEventListener('click', deleteZone);
         elements.resetBtn.addEventListener('click', reset);
-        elements.sheetConfirm.addEventListener('click', commitPace);
-        elements.sheetBackdrop.addEventListener('click', commitPace);
+        elements.sheetConfirm.addEventListener('click', commitSheet);
+        elements.sheetBackdrop.addEventListener('click', commitSheet);
         elements.sheetInput.addEventListener('keydown', e => {
-            if (e.key === 'Enter') commitPace();
+            if (e.key === 'Enter') commitSheet();
+        });
+        elements.sheetNameInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') commitSheet();
         });
         elements.sheetInput.addEventListener('blur', normalizePaceInputValue);
         elements.zones.addEventListener('click', handleZoneClick);

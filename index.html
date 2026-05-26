@@ -106,14 +106,24 @@
                 </section>
 
                 <section class="ctds-multi-loaded" id="multiLoadedState" hidden>
-                    <div class="ctds-multi-panel" id="multiChartPanel">
-                        <div class="ctds-multi-chart-region" id="multiChartRegion" aria-label="Elevation segment chart"></div>
-                        <div class="ctds-multi-zones" id="multiZones" role="list" aria-label="Pace zones"></div>
+                    <div class="ctds-multi-total" id="multiTotalRow">
+                        <span class="ctds-multi-total-item">
+                            <span class="ctds-multi-total-label">Distance</span>
+                            <span class="ctds-multi-total-value" id="multiTotalDistance"></span>
+                        </span>
+                        <span class="ctds-multi-total-item">
+                            <span class="ctds-multi-total-label">Est. Time</span>
+                            <span class="ctds-multi-total-value" id="multiTotalTime"></span>
+                        </span>
                     </div>
 
-                    <div class="ctds-multi-total" id="multiTotalRow">
-                        <span class="ctds-multi-total-label">Total Time</span>
-                        <span class="ctds-multi-total-value" id="multiTotalTime"></span>
+                    <div class="ctds-multi-panel" id="multiChartPanel">
+                        <div class="ctds-multi-chart-region" id="multiChartRegion" aria-label="Elevation segment chart">
+                            <div class="mp-chart-tooltip" id="mpChartTooltip" hidden>
+                                <span id="mpChartTooltipValue"></span>
+                            </div>
+                        </div>
+                        <div class="ctds-multi-zones" id="multiZones" role="list" aria-label="Pace zones"></div>
                     </div>
                 </section>
 
@@ -150,6 +160,14 @@
                     inputmode="numeric"
                     placeholder="MM:SS"
                     aria-label="Zone pace" />
+                <input
+                    class="mp-sheet-input mp-sheet-input--name"
+                    id="mpSheetNameInput"
+                    type="text"
+                    inputmode="text"
+                    placeholder="Zone name"
+                    aria-label="Zone name"
+                    hidden />
                 <button class="mp-sheet-confirm" id="mpSheetConfirm" type="button">
                     Confirm
                 </button>

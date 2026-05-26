@@ -28,7 +28,7 @@
     --multi-handle-height: 12px;
     --multi-rule: rgba(255, 255, 255, 0.92);
     --mp-header-h: 48px;
-    --mp-total-h: 40px;
+    --mp-total-h: 48px;
     --mp-footer-h: 112px;
     --mp-gap: 16px;
     --mp-panel-h: calc(
@@ -616,16 +616,36 @@ body.is-multi-pace .ctds-mode-btn.is-active {
     padding: 8px 0;
 }
 
+.ctds-multi-total-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
 .ctds-multi-total-label {
-    font-size: 14px;
-    line-height: 1.2;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .ctds-multi-total-value {
-    min-width: 8ch;
-    text-align: right;
-    font-size: 26px;
+    font-size: 22px;
     line-height: 1;
+}
+
+.mp-chart-tooltip {
+    position: absolute;
+    left: 105%;
+    background: var(--text);
+    color: var(--multi-bg);
+    font-size: 11px;
+    font-family: var(--font-family);
+    padding: 2px 5px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 20;
+    transform: translateY(-50%);
 }
 
 .ctds-multi-footer {
