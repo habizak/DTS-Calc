@@ -395,7 +395,7 @@ class PaceCalculator {
             return null;
         }
 
-        const normalized = this.normalizePace(pace);
+        const normalized = normalizePace(pace);
         const seconds = this.parsePace(normalized);
         if (seconds <= 0) {
             return null;
