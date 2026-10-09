@@ -186,7 +186,7 @@ class PaceCalculator {
             paceField.classList.add('is-target');
         }
 
-        // Anything not marked as target becomes non-target (dimmed, editable)
+        // Anything not marked as target becomes non-target (highlighted, editable)
         allFields.forEach(field => {
             if (!field.classList.contains('is-target')) field.classList.add('is-nontarget');
         });

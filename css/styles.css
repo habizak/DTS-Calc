@@ -235,21 +235,24 @@ body.is-multi-pace .ctds-mode-btn.is-active {
 }
 
 .ctds-value::placeholder {
-    color: rgba(255, 255, 255, 0.34);
+    color: currentColor;
+    opacity: 1;
 }
 
 .ctds-value:disabled {
     cursor: not-allowed;
+    -webkit-text-fill-color: currentColor;
+    opacity: 1;
 }
 
 .ctds-field.is-target .ctds-label,
 .ctds-field.is-target .ctds-value {
-    color: var(--text);
+    color: var(--dimmed);
 }
 
 .ctds-field.is-nontarget .ctds-label,
 .ctds-field.is-nontarget .ctds-value {
-    color: var(--dimmed);
+    color: var(--text);
 }
 
 .ctds-controls {
