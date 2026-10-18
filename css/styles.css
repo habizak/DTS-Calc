@@ -12,7 +12,7 @@
     --muted: rgba(255, 255, 255, 0.72);
     --dimmed: rgba(255, 255, 255, 0.46);
     --font-family: "JetBrains Mono", monospace;
-    --header-size: 20px;
+    --header-size: 16px;
     --mode-size: 12px;
     --single-label-size: 15px;
     --single-value-size: clamp(36px, 13vw, 54px);
@@ -98,10 +98,29 @@ button {
 }
 
 .ctds-header-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.ctds-header-label {
     font-size: var(--header-size);
     font-weight: 500;
     line-height: 1.25;
-    white-space: nowrap;
+}
+
+.ctds-brand-mark {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    display: block;
+}
+
+.ctds-brand-mark svg {
+    display: block;
+    width: 24px;
+    height: 24px;
 }
 
 .ctds-mode-toggle {
