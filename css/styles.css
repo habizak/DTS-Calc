@@ -98,10 +98,34 @@ button {
 }
 
 .ctds-header-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: var(--header-size);
     font-weight: 500;
     line-height: 1.25;
     white-space: nowrap;
+}
+
+.ctds-brand-mark {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    display: block;
+}
+
+.ctds-brand-mark svg {
+    display: block;
+    width: 24px;
+    height: 24px;
+}
+
+@media (max-width: 330px) {
+    .ctds-brand-mark,
+    .ctds-brand-mark svg {
+        width: 16px;
+        height: 16px;
+    }
 }
 
 .ctds-mode-toggle {
