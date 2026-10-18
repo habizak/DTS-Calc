@@ -86,9 +86,19 @@ DTS-Calc/
 │   ├── convert.js
 │   ├── gpx.js
 │   └── multi-pace.js
+├── assets/
+│   ├── icon.svg               # Source 8×8 artwork (transparent, black pixels)
+│   ├── favicon.svg            # Same cells on a white tile
+│   ├── apple-touch-icon.png   # 180×180
+│   ├── icon-192.png           # 192×192
+│   ├── icon-512.png           # 512×512
+│   └── icon-maskable-512.png  # 512×512, maskable safe zone
+├── manifest.json    # App name and icon set
 ├── vercel.json      # Vercel rewrites (root → index.html)
 └── README.md
 ```
+
+`assets/icon.svg` is the source artwork. The favicon, apple-touch icon, and manifest PNGs are generated from those same cells.
 
 ## Routes
 
