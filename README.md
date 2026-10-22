@@ -89,18 +89,23 @@ DTS-Calc/
 │   ├── gpx.js
 │   └── multi-pace.js
 ├── assets/
-│   ├── icon.svg               # Source 8×8 artwork (transparent, black pixels)
-│   ├── favicon.svg            # Same cells on a white tile
-│   ├── apple-touch-icon.png   # 180×180
-│   ├── icon-192.png           # 192×192
-│   ├── icon-512.png           # 512×512
-│   └── icon-maskable-512.png  # 512×512, maskable safe zone
-├── manifest.json    # App name and icon set
+│   ├── icon.svg               # 8×8 header glyph (transparent, black pixels)
+│   ├── dts-calc-favicon.svg   # Browser-tab icon (10×10, white on #C20707)
+│   ├── dts-calc-favicon-32.png
+│   ├── dts-calc-favicon-16.png
+│   ├── home-screen-icon.svg   # Home-screen source: 8×8 glyph, 2-cell padding (12×12)
+│   ├── apple-touch-icon.png   # 180×180 home-screen icon
+│   ├── icon-192.png           # 192×192 installed-app icon
+│   ├── icon-512.png           # 512×512 installed-app icon
+│   └── icon-maskable-512.png  # 512×512 maskable icon (same tile; padding covers the safe zone)
+├── manifest.json    # App name and home-screen / installed-app icon set
 ├── vercel.json      # Vercel rewrites (root → index.html)
 └── README.md
 ```
 
-`assets/icon.svg` is the source artwork. The favicon, apple-touch icon, and manifest PNGs are generated from those same cells.
+The in-app header mark is the inline 8×8 glyph in `index.html` (same cells as `assets/icon.svg`). The browser tab uses `assets/dts-calc-favicon.svg` (`<link rel="icon" type="image/svg+xml">`) plus `dts-calc-favicon-32.png` and `dts-calc-favicon-16.png`. The manifest does not list the favicon.
+
+Home-screen and installed-app icons are a separate tile: the 8×8 glyph in white `#FFFFFF` on app red `#C20707`, with 2 grid squares of padding (12×12) and square corners. `assets/home-screen-icon.svg` is that source. `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, and `icon-maskable-512.png` are nearest-neighbour scales of the 1024×1024 master, opaque RGB with no alpha. The manifest points at those files, not the favicon.
 
 ## Routes
 
