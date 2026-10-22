@@ -94,9 +94,7 @@ button {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 46px;
-    margin-inline: calc(-1 * var(--page-padding-x));
-    padding-inline: 16px;
+    min-height: 26px;
 }
 
 .ctds-header-title {
@@ -107,7 +105,6 @@ button {
 }
 
 .ctds-header-label {
-    font-family: var(--font-family);
     font-size: var(--header-size);
     font-weight: 700;
     line-height: 1.4;
