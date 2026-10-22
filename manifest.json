@@ -9,7 +9,7 @@
   "background_color": "#c20707",
   "icons": [
     {
-      "src": "/assets/favicon.svg",
+      "src": "/assets/home-screen-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
