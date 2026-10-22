@@ -12,7 +12,7 @@
     --muted: rgba(255, 255, 255, 0.72);
     --dimmed: rgba(255, 255, 255, 0.46);
     --font-family: "JetBrains Mono", monospace;
-    --header-size: 16px;
+    --header-size: 15px;
     --mode-size: 12px;
     --single-label-size: 15px;
     --single-value-size: clamp(36px, 13vw, 54px);
@@ -106,8 +106,9 @@ button {
 
 .ctds-header-label {
     font-size: var(--header-size);
-    font-weight: 500;
-    line-height: 1.25;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: 0;
 }
 
 .ctds-brand-mark {
