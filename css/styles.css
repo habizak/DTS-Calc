@@ -23,21 +23,8 @@
     --single-circle-size: clamp(84px, 25vw, 102px);
     --single-reset-height: 22px;
     --multi-content-width: 345px;
-    --multi-panel-height: 574px;
-    --multi-chart-width: 172.5px;
     --multi-handle-height: 12px;
     --multi-rule: rgba(255, 255, 255, 0.92);
-    --mp-header-h: 48px;
-    --mp-total-h: 48px;
-    --mp-footer-h: 112px;
-    --mp-gap: 16px;
-    --mp-panel-h: calc(
-        100dvh
-        - var(--mp-header-h)
-        - var(--mp-total-h)
-        - var(--mp-footer-h)
-        - (var(--mp-gap) * 3)
-    );
 }
 
 * {
@@ -46,12 +33,21 @@
     padding: 0;
 }
 
+/* The document must not scroll. iOS paints a scroll-edge blur over the
+   header when html/body themselves can move under the status bar. */
 html,
 body {
-    min-height: 100%;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
 }
 
 body {
+    position: fixed;
+    inset: 0;
     background: var(--single-bg);
     color: var(--text);
     font-family: var(--font-family);
@@ -81,16 +77,29 @@ button {
 
 .ctds-app {
     position: relative;
-    width: min(100vw, var(--frame-width));
-    min-height: min(100dvh, var(--frame-height));
+    width: min(100%, var(--frame-width));
+    height: min(100dvh, var(--frame-height));
+    max-height: 100dvh;
     margin: 0 auto;
     padding: var(--page-padding-top) var(--page-padding-x) var(--page-padding-bottom);
     display: flex;
     flex-direction: column;
     gap: var(--section-gap);
+    overflow: hidden;
+}
+
+.ctds-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .ctds-header {
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -185,16 +194,18 @@ body.is-multi-pace .ctds-mode-btn.is-active {
 
 .ctds-single-shell,
 .ctds-multi-shell {
-    flex: 1 1 auto;
     display: flex;
     flex-direction: column;
-    min-height: 0;
+}
+
+.ctds-single-shell {
+    flex: 1 0 auto;
+    min-height: min-content;
 }
 
 .ctds-multi-shell {
-    height: 100dvh;
-    max-height: 100dvh;
-    overflow: hidden;
+    flex: 1 0 auto;
+    min-height: min-content;
 }
 
 .ctds-main {
@@ -352,7 +363,9 @@ body.is-multi-pace .ctds-mode-btn.is-active {
 
 .ctds-reset-icon {
     font-size: 22px;
-    line-height: 1;
+    line-height: 22px;
+    height: 22px;
+    overflow: hidden;
 }
 
 .ctds-announcer {
@@ -369,6 +382,10 @@ body.is-multi-pace .ctds-mode-btn.is-active {
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
+}
+
+.ctds-multi-main:has(.ctds-multi-loaded:not([hidden])) {
+    flex: 1 1 auto;
 }
 
 .ctds-multi-status {
@@ -394,13 +411,14 @@ body.is-multi-pace .ctds-mode-btn.is-active {
 }
 
 .ctds-multi-empty {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     gap: 16px;
-    width: var(--multi-content-width);
+    width: 100%;
+    max-width: var(--multi-content-width);
     margin: 0 auto;
     text-align: center;
 }
@@ -453,13 +471,14 @@ body.is-multi-pace .ctds-mode-btn.is-active {
 }
 
 .ctds-multi-panel {
-    width: var(--multi-content-width);
-    height: var(--mp-panel-h);
-    max-height: var(--mp-panel-h);
+    width: 100%;
+    max-width: var(--multi-content-width);
+    flex: 1 1 auto;
+    min-height: clamp(160px, 40dvh, 480px);
+    height: auto;
     overflow: hidden;
-    flex-shrink: 0;
     display: grid;
-    grid-template-columns: var(--multi-chart-width) var(--multi-chart-width);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     margin: 0 auto;
     border-top: 1px solid var(--multi-rule);
     border-bottom: 1px solid var(--multi-rule);
@@ -630,7 +649,9 @@ body.is-multi-pace .ctds-mode-btn.is-active {
 }
 
 .ctds-multi-total {
-    width: var(--multi-content-width);
+    width: 100%;
+    max-width: var(--multi-content-width);
+    flex: 0 0 auto;
     margin: 0 auto;
     display: flex;
     justify-content: space-between;
@@ -672,6 +693,7 @@ body.is-multi-pace .ctds-mode-btn.is-active {
 }
 
 .ctds-multi-footer {
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -679,7 +701,8 @@ body.is-multi-pace .ctds-mode-btn.is-active {
 }
 
 .ctds-multi-actions {
-    width: var(--multi-content-width);
+    width: 100%;
+    max-width: var(--multi-content-width);
     display: flex;
     margin: 0 auto;
 }
@@ -693,20 +716,21 @@ body.is-multi-pace .ctds-mode-btn.is-active {
 }
 
 .ctds-reset--multi {
-    width: var(--multi-content-width);
+    width: 100%;
+    max-width: var(--multi-content-width);
     min-height: 22px;
     margin: 0 auto;
 }
 
 .mp-sheet-backdrop {
-    position: fixed;
+    position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
     z-index: 100;
 }
 
 .mp-sheet {
-    position: fixed;
+    position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
@@ -767,6 +791,26 @@ body.is-multi-pace .ctds-mode-btn.is-active {
     white-space: nowrap;
 }
 
+@media (max-width: 380px) {
+    .ctds-multi-zone-inner {
+        gap: 6px;
+    }
+
+    .ctds-multi-zone-value {
+        min-width: 0;
+    }
+
+    .ctds-multi-zone-title-row {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 340px) {
+    .ctds-multi-zone-pace {
+        font-size: 16px;
+    }
+}
+
 @media (max-width: 420px) {
     :root {
         --single-value-size: clamp(34px, 12.4vw, 50px);
@@ -789,7 +833,14 @@ body.is-multi-pace .ctds-mode-btn.is-active {
 }
 
 @supports not (height: 100dvh) {
+    html,
+    body {
+        height: 100%;
+        max-height: none;
+    }
+
     .ctds-app {
-        min-height: min(100vh, var(--frame-height));
+        height: min(100vh, var(--frame-height));
+        max-height: 100vh;
     }
 }

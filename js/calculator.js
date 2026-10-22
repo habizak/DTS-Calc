@@ -7,6 +7,7 @@ import {
     parseDigitsToPace,
 } from './normalize.js';
 import { convertUnits } from './convert.js';
+import { bindViewportLock } from './viewport-lock.js';
 
 class PaceCalculator {
     constructor() {
@@ -410,6 +411,7 @@ class PaceCalculator {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    bindViewportLock();
     const calculator = new PaceCalculator();
 
     const modeSingle = document.getElementById('modeSingle');

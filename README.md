@@ -18,6 +18,7 @@
 - Offline-first with localStorage persistence
 - Reset: click clears values; long-press (≥500ms) factory resets
 - Mobile-first frame (393×852), responsive on desktop
+- Document scroll is locked. The header stays in the app column, and only an inner container scrolls, so iOS does not frost the header under the status bar
 - Accessible: ARIA labels, focus-visible, high-contrast support
 
 ## Tech Stack
@@ -82,6 +83,7 @@ DTS-Calc/
 │   └── styles.css   # Extracted app styles
 ├── js/
 │   ├── calculator.js
+│   ├── viewport-lock.js       # Keeps the fixed app above the keyboard
 │   ├── normalize.js
 │   ├── convert.js
 │   ├── gpx.js
@@ -118,6 +120,14 @@ DTS-Calc/
   - **GPX Data**: GPX strings parsed and downsampled to 100m chunks. Elevation mapped onto segments.
   - **Planner**: Users define distinct paces for groups of segments ("Zones"), and a total run time is computed by accumulating segment durations.
 - **Persistence**: `saveState()` / `loadState()` applied on init, compute, clear, and reset events for both modes separately.
+
+## Viewport and scrolling
+
+iOS 26 draws a frosted scroll-edge over the header of an installed home-screen app when `html` / `body` can scroll. That was happening here because `.ctds-multi-shell` was `100dvh` *under* the header (about 82px past the viewport) and the chart height subtracted a hardcoded `--mp-header-h` of 48px.
+
+`html` and `body` now fill the viewport with `overflow: hidden` and `overscroll-behavior: none` (no rubber-band). The header stays a flex row at the top of `.ctds-app`, padded by the existing safe-area inset. `.ctds-scroll` is the only scroller (`overflow-y: auto`, `overscroll-behavior: contain`). Multi mode fills the space under the header when it fits. On a short or landscape screen the elevation panel keeps a minimum height and `.ctds-scroll` moves so the totals, chart, and footer stay reachable. `viewport-fit=cover` lets the existing safe-area padding clear the status bar. `theme-color` is the solid app red and there is no status-bar meta — neither one is the frost.
+
+When the keyboard opens, `viewport-lock.js` sizes the app to the visible viewport so inputs and the pace sheet stay reachable. The document does not scroll.
 
 ## Key Concepts
 
