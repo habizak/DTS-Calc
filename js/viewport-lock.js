@@ -18,9 +18,11 @@ export function bindViewportLock(app = document.querySelector('.ctds-app')) {
     const scroller = app.querySelector('.ctds-scroll');
 
     const syncToVisibleViewport = () => {
+        const scale = viewport.scale || 1;
+        const zoomed = Math.abs(scale - 1) > 0.01;
         const obscured = window.innerHeight - viewport.height;
         const offsetTop = viewport.offsetTop;
-        const keyboardOpen = obscured > KEYBOARD_THRESHOLD_PX || offsetTop > 1;
+        const keyboardOpen = !zoomed && (obscured > KEYBOARD_THRESHOLD_PX || offsetTop > 1);
 
         if (!keyboardOpen) {
             app.style.height = '';
@@ -37,6 +39,21 @@ export function bindViewportLock(app = document.querySelector('.ctds-app')) {
             : '';
     };
 
+    const revealFocusedField = () => {
+        const target = document.activeElement;
+        if (!isEditableField(target) || !scroller || !scroller.contains(target)) {
+            return;
+        }
+
+        const scrollerRect = scroller.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        if (targetRect.bottom > scrollerRect.bottom - 8) {
+            scroller.scrollTop += targetRect.bottom - scrollerRect.bottom + 12;
+        } else if (targetRect.top < scrollerRect.top + 8) {
+            scroller.scrollTop -= scrollerRect.top - targetRect.top + 12;
+        }
+    };
+
     let frame = 0;
     const schedule = () => {
         if (frame) {
@@ -45,31 +62,11 @@ export function bindViewportLock(app = document.querySelector('.ctds-app')) {
         frame = window.requestAnimationFrame(() => {
             frame = 0;
             syncToVisibleViewport();
+            revealFocusedField();
         });
     };
 
     viewport.addEventListener('resize', schedule);
     viewport.addEventListener('scroll', schedule);
     window.addEventListener('orientationchange', schedule);
-
-    if (!scroller) {
-        return;
-    }
-
-    app.addEventListener('focusin', (event) => {
-        const target = event.target;
-        if (!isEditableField(target) || !scroller.contains(target)) {
-            return;
-        }
-
-        window.setTimeout(() => {
-            const scrollerRect = scroller.getBoundingClientRect();
-            const targetRect = target.getBoundingClientRect();
-            if (targetRect.bottom > scrollerRect.bottom - 8) {
-                scroller.scrollTop += targetRect.bottom - scrollerRect.bottom + 12;
-            } else if (targetRect.top < scrollerRect.top + 8) {
-                scroller.scrollTop -= scrollerRect.top - targetRect.top + 12;
-            }
-        }, 280);
-    });
 }

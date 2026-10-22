@@ -125,7 +125,7 @@ DTS-Calc/
 
 iOS 26 draws a frosted scroll-edge over the header of an installed home-screen app when `html` / `body` can scroll. That was happening here because `.ctds-multi-shell` was `100dvh` *under* the header (about 82px past the viewport) and the chart height subtracted a hardcoded `--mp-header-h` of 48px.
 
-`html` and `body` now fill the viewport with `overflow: hidden` and `overscroll-behavior: none` (no rubber-band). The header stays a fixed flex row at the top of `.ctds-app`, padded by the existing safe-area inset. `.ctds-scroll` is the only scroller (`overflow-y: auto`, `-webkit-overflow-scrolling: touch`, `overscroll-behavior: contain`). Multi mode fills the space under the header; the elevation panel flexes into whatever height is left. `viewport-fit=cover` lets that existing safe-area padding clear the status bar. `theme-color` is the solid app red and there is no status-bar meta — neither one is the frost.
+`html` and `body` now fill the viewport with `overflow: hidden` and `overscroll-behavior: none` (no rubber-band). The header stays a flex row at the top of `.ctds-app`, padded by the existing safe-area inset. `.ctds-scroll` is the only scroller (`overflow-y: auto`, `overscroll-behavior: contain`). Multi mode fills the space under the header when it fits. On a short or landscape screen the elevation panel keeps a minimum height and `.ctds-scroll` moves so the totals, chart, and footer stay reachable. `viewport-fit=cover` lets the existing safe-area padding clear the status bar. `theme-color` is the solid app red and there is no status-bar meta — neither one is the frost.
 
 When the keyboard opens, `viewport-lock.js` sizes the app to the visible viewport so inputs and the pace sheet stay reachable. The document does not scroll.
 
