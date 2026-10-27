@@ -82,6 +82,11 @@ function getZoneDistanceKm(zone, segments, route) {
     return Number((preciseEndKm - start.startKm).toFixed(6));
 }
 
+export function totalZoneDuration(zones, segments, route) {
+    if (!zones.length || zones.some(zone => !zone.paceSeconds)) return null;
+    return zones.reduce((sum, zone) => sum + zone.paceSeconds * getZoneDistanceKm(zone, segments, route), 0);
+}
+
 function cloneState(state) {
     return JSON.parse(JSON.stringify(state));
 }
@@ -266,14 +271,7 @@ export function initMultiPaceApp({ root, storageKey, announce, getSeedPace }) {
     }
 
     function getTotalDuration() {
-        if (!state.zones.length || state.zones.some(zone => !zone.paceSeconds)) {
-            return null;
-        }
-
-        return state.zones.reduce((sum, zone) => {
-            const distanceKm = getZoneDistanceKm(zone, state.segments, state.route);
-            return sum + (zone.paceSeconds * distanceKm);
-        }, 0);
+        return totalZoneDuration(state.zones, state.segments, state.route);
     }
 
     function renderChart() {
