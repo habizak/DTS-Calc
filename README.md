@@ -7,13 +7,13 @@
 - **Two calculation modes**: Single pace (classic calculator) and Multi pace (GPX route planner)
 - **Single Mode**:
   - Four linked fields: Time (HH:MM:SS), Distance (KM/MI), Speed (KM/H or MPH), Pace (MIN/KM or MIN/MI)
-  - Target selector: TIME, DISTANCE, or SPEED — the selected target is computed from the others
+  - Target selector: Time, Distance, or Speed — the selected target is computed from the others
 - **Multi Mode**:
   - GPX Upload: Parse `.gpx` routes (5km to 45km) into 100m pace blocks
   - Elevation Chart: Visualise the route's elevation profile
   - Pace Zones: Select segments of the route and assign distinct paces to plan your final finishing time
   - Zone Controls: `+ Add Zone` and `Delete` actions to manage pace zones
-- Unit toggle: METRIC (km, km/h, min/km) or IMPERIAL (mi, mph, min/mi)
+- Unit toggle: Metric (km, km/h, min/km) or Imperial (mi, mph, min/mi)
 - Smart input: digits auto-format to time (e.g. `123456` → `01:23:45`) or pace (e.g. `530` → `05:30`)
 - Offline-first with localStorage persistence
 - Reset: click clears values; long-press (≥500ms) factory resets
@@ -119,7 +119,7 @@ Home-screen and installed-app icons are a separate tile: the 8×8 glyph in white
 - **Single Mode**:
   - **Input**: User edits a non-target field → debounced `compute()` (200ms)
   - **Blur**: Normalize value (time/pace auto-format from digits), then `compute()`
-  - **Target**: TIME, DISTANCE, or SPEED — target field is read-only; others drive it
+  - **Target**: Time, Distance, or Speed — target field is read-only; others drive it
   - **Speed vs Pace**: When both time and distance exist, speed and pace stay in sync; `lastEdited` (PACE or SPEED) decides which drives the other
 - **Multi Mode**:
   - **GPX Data**: GPX strings parsed and downsampled to 100m chunks. Elevation mapped onto segments.
@@ -136,8 +136,8 @@ When the keyboard opens, `viewport-lock.js` sizes the app to the visible viewpor
 
 ## Key Concepts
 
-- **Target field**: The computed value. TIME = from distance + speed/pace; DISTANCE = from time + speed/pace; SPEED = locks both speed and pace (derived from time + distance)
-- **Unit conversion**: 1 mi = 1.609344 km; applied on toggle between METRIC and IMPERIAL
+- **Target field**: The computed value. Time = from distance + speed/pace; Distance = from time + speed/pace; Speed = locks both speed and pace (derived from time + distance)
+- **Unit conversion**: 1 mi = 1.609344 km; applied on toggle between Metric and Imperial
 - **Digits-to-time**: Raw digits (e.g. `123456`) → `01:23:45` on blur
 - **Digits-to-pace**: Raw digits (e.g. `530`) → `05:30` on blur
 
