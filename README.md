@@ -1,6 +1,6 @@
 # DTS-Calc
 
-**Distance–Time–Speed calculator for runners.** Features two distinct modes: a **Single** pace calculator (enter any two of time, distance, or speed/pace to compute the third) and a **Multi** pace workout planner (upload a GPX route, divide it into segments, and plan varying paces across elevation profiles). Metric and imperial units. Offline-first, static HTML with modular ES modules. Mobile-first layout with responsive design.
+**Distance–Time–Speed calculator for runners.** Features two distinct modes: a **Single** pace calculator (enter any two of time, distance, or speed/pace to compute the third) and a **Multi** pace workout planner (upload a GPX route, divide it into segments, and plan varying paces across elevation profiles). Metric and imperial units. Static HTML with modular ES modules. Mobile-first layout with responsive design.
 
 ## Features
 
@@ -15,7 +15,7 @@
   - Zone Controls: `+ Add Zone` and `Delete` actions to manage pace zones
 - Unit toggle: METRIC (km, km/h, min/km) or IMPERIAL (mi, mph, min/mi)
 - Smart input: digits auto-format to time (e.g. `123456` → `01:23:45`) or pace (e.g. `530` → `05:30`)
-- Offline-first with localStorage persistence
+- LocalStorage persistence. The repository has no service worker, so a previously loaded page may continue working without a connection, but offline loading and installation behavior are not guaranteed.
 - Reset: click clears values; long-press (≥500ms) factory resets
 - Mobile-first frame (393×852), responsive on desktop
 - Document scroll is locked. The header stays in the app column, and only an inner container scrolls, so iOS does not frost the header under the status bar
@@ -144,6 +144,8 @@ When the keyboard opens, `viewport-lock.js` sizes the app to the visible viewpor
 ## Getting Started
 
 **Prerequisites:** None (static HTML; open in browser or serve locally)
+
+For regression tests and manual verification, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```bash
 # Option 1: Open directly
