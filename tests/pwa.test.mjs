@@ -1,10 +1,11 @@
-import test from 'node:test';
+import { describe, test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import playwright from 'playwright';
+import { SHELL, hashShell } from '../scripts/shell-hash.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const { chromium, webkit } = playwright;
@@ -19,6 +20,24 @@ const TYPES = {
     '.woff2': 'font/woff2',
     '.txt': 'text/plain; charset=utf-8',
 };
+
+const MARKERS = {
+    '/js/calculator.js': 'calculator',
+    '/js/multi-pace.js': 'multi',
+    '/js/gpx.js': 'gpx',
+};
+
+function applyRevision(path, body, revision) {
+    if (path === '/' || path === '/index.html') {
+        return Buffer.from(body.toString('utf8').replaceAll('content="local"', `content="${revision}"`));
+    }
+    const key = MARKERS[path];
+    if (!key) return body;
+    return Buffer.concat([
+        body,
+        Buffer.from(`\nglobalThis.__dtsRev=Object.assign(globalThis.__dtsRev||{},{${key}:${JSON.stringify(revision)}});\n`),
+    ]);
+}
 
 let shellRevision = 'A';
 /** @type {import('node:http').Server} */
@@ -38,11 +57,26 @@ function listen() {
             return;
         }
         try {
-            let body = await readFile(filePath);
-            if (pathname === '/index.html') {
-                body = Buffer.from(body.toString('utf8').replace('content="local"', `content="${shellRevision}"`));
+            if (relative === 'sw.js') {
+                const entries = [];
+                for (const path of SHELL) {
+                    const shellRelative = path === '/' ? 'index.html' : path.replace(/^\/+/, '');
+                    const shellBody = applyRevision(path, await readFile(join(root, shellRelative)), shellRevision);
+                    entries.push({ path, body: shellBody });
+                }
+                const source = (await readFile(filePath, 'utf8')).replace(
+                    /const BUILD = '[0-9a-f]+';/,
+                    `const BUILD = '${hashShell(entries)}';`,
+                );
+                response.writeHead(200, {
+                    'Content-Type': 'text/javascript; charset=utf-8',
+                    'Cache-Control': 'no-cache',
+                });
+                response.end(source);
+                return;
             }
-            const cacheControl = pathname === '/sw.js' ? 'no-cache' : 'public, max-age=0, must-revalidate';
+            let body = applyRevision(url.pathname === '/' ? '/' : url.pathname, await readFile(filePath), shellRevision);
+            const cacheControl = 'public, max-age=0, must-revalidate';
             response.writeHead(200, {
                 'Content-Type': TYPES[extname(filePath)] || 'application/octet-stream',
                 'Cache-Control': cacheControl,
@@ -119,13 +153,47 @@ async function coldFcp(browserType, userAgent, throttle) {
     return { ...timing, google };
 }
 
+async function until(page, fn, timeout = 15000) {
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
+        if (await page.evaluate(fn)) return;
+        await page.waitForTimeout(50);
+    }
+    throw new Error(`timed out waiting for ${fn.toString().slice(0, 160)}`);
+}
+
 async function installShell(context) {
     const page = await context.newPage();
     await page.goto(base, { waitUntil: 'load', timeout: 30000 });
-    await page.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 15000 });
-    await page.reload({ waitUntil: 'load' });
-    await page.waitForFunction(() => navigator.serviceWorker.controller);
+    await until(page, async () => {
+        const registration = await navigator.serviceWorker.getRegistration();
+        return !!(registration && registration.active);
+    });
+    await page.goto(base, { waitUntil: 'load', timeout: 30000 });
+    await until(page, () => !!navigator.serviceWorker.controller);
     return page;
+}
+
+async function markers(page) {
+    await page.locator('#modeMulti').click();
+    await page.waitForFunction(() => {
+        const rev = globalThis.__dtsRev;
+        return !!(rev && rev.calculator && rev.multi && rev.gpx);
+    });
+    return page.evaluate(() => ({
+        html: document.querySelector('meta[name="dts-shell"]').content,
+        calculator: globalThis.__dtsRev.calculator,
+        multi: globalThis.__dtsRev.multi,
+        gpx: globalThis.__dtsRev.gpx,
+        mode: document.querySelector('#modeSingle').classList.contains('is-active') ? 'before-multi' : 'multi',
+    }));
+}
+
+function assertVersion(found, version) {
+    assert.equal(found.html, version, JSON.stringify(found));
+    assert.equal(found.calculator, version);
+    assert.equal(found.multi, version);
+    assert.equal(found.gpx, version);
 }
 
 async function useCalculator(page) {
@@ -162,11 +230,12 @@ async function useCalculator(page) {
     assert.match(await page.locator('#modeSingle').getAttribute('class'), /is-active/);
 }
 
-test.before(async () => {
+describe('pwa', { concurrency: 1 }, () => {
+before(async () => {
     await listen();
 });
 
-test.after(async () => {
+after(async () => {
     await new Promise((resolve) => server.close(resolve));
 });
 
@@ -225,35 +294,74 @@ test('installed shell paints quickly while the network is stalled or offline', {
     }
 });
 
-test('a later launch picks up a new deploy and the calculator still runs', { timeout: 120000 }, async () => {
-    shellRevision = 'A';
-    const { browser, context } = await mobile(chromium, CHROME_UA);
-    try {
-        const page = await installShell(context);
-        assert.equal(await page.locator('meta[name="dts-shell"]').getAttribute('content'), 'A');
+test('a deploy stays on one shell until the second launch', { timeout: 180000 }, async () => {
+    for (const [name, browserType, userAgent] of [
+        ['chromium', chromium, CHROME_UA],
+        ['webkit', webkit, IOS_UA],
+    ]) {
+        shellRevision = 'A';
+        const { browser, context } = await mobile(browserType, userAgent);
+        try {
+            const installed = await installShell(context);
+            await installed.evaluate(() => localStorage.setItem('pace-mode', 'single'));
+            await installed.waitForLoadState('networkidle');
+            await installed.close();
 
-        shellRevision = 'B';
-        await page.reload({ waitUntil: 'load' });
-        assert.equal(await page.locator('meta[name="dts-shell"]').getAttribute('content'), 'A');
-        await page.waitForFunction(async () => {
-            const cache = await caches.open('dts-calc-v1');
-            const response = await cache.match('/');
-            const html = response ? await response.text() : '';
-            return html.includes('content="B"');
-        }, null, { timeout: 10000 });
-        await page.reload({ waitUntil: 'load' });
-        assert.equal(await page.locator('meta[name="dts-shell"]').getAttribute('content'), 'B');
-        await useCalculator(page);
-    } finally {
-        await browser.close();
-    }
+            shellRevision = 'B';
+            const first = await context.newPage();
+            await first.goto(base, { waitUntil: 'load', timeout: 30000 });
+            assert.equal(await first.locator('meta[name="dts-shell"]').getAttribute('content'), 'A');
+            assert.match(await first.locator('#modeSingle').getAttribute('class'), /is-active/);
+            await until(first, async () => {
+                const meta = await caches.open('dts-calc-meta');
+                const pointer = await meta.match('/active');
+                if (!pointer) return false;
+                const cache = await caches.open((await pointer.text()).trim());
+                const files = await Promise.all([
+                    cache.match('/index.html'),
+                    cache.match('/js/calculator.js'),
+                    cache.match('/js/multi-pace.js'),
+                    cache.match('/js/gpx.js'),
+                ]);
+                if (files.some((response) => !response)) return false;
+                const text = (await Promise.all(files.map((response) => response.text()))).join('\n');
+                const keys = await cache.keys();
+                return keys.length >= 19
+                    && text.includes('content="B"')
+                    && text.includes('calculator:"B"')
+                    && text.includes('multi:"B"')
+                    && text.includes('gpx:"B"');
+            }, 20000);
+            assertVersion(await markers(first), 'A');
+            await first.evaluate(() => localStorage.setItem('pace-mode', 'single'));
+            await first.close();
 
-    const kit = await mobile(webkit, IOS_UA);
-    try {
-        const kitPage = await kit.context.newPage();
-        await kitPage.goto(base, { waitUntil: 'load' });
-        await useCalculator(kitPage);
-    } finally {
-        await kit.browser.close();
+            const second = await context.newPage();
+            await second.goto(base, { waitUntil: 'load', timeout: 30000 });
+            assert.match(await second.locator('#modeSingle').getAttribute('class'), /is-active/);
+            assertVersion(await markers(second), 'B');
+            const stale = await second.evaluate(async () => {
+                const found = [];
+                for (const key of await caches.keys()) {
+                    const cache = await caches.open(key);
+                    for (const path of ['/', '/index.html', '/js/calculator.js', '/js/multi-pace.js', '/js/gpx.js']) {
+                        const response = await cache.match(path);
+                        if (!response) continue;
+                        const text = await response.text();
+                        if (text.includes('content="A"') || text.includes('calculator:"A"') || text.includes('multi:"A"') || text.includes('gpx:"A"')) {
+                            found.push(`${key} ${path}`);
+                        }
+                    }
+                }
+                return found;
+            });
+            assert.deepEqual(stale, []);
+            await second.locator('#modeSingle').click();
+            await useCalculator(second);
+            console.log(name, 'deploy shells match');
+        } finally {
+            await browser.close();
+        }
     }
+});
 });

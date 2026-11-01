@@ -14,12 +14,15 @@
     <link rel="manifest" href="./manifest.json">
     <!-- Inlined from css/styles.css so the first HTML response can paint. -->
     <style id="app-css">
-/* Latin variable subset of JetBrains Mono (weights 400–700), SIL OFL.
-   This file is inlined into index.html. After editing, run node scripts/inline-css.mjs. */
+/* Self-hosted latin variable subset of JetBrains Mono, SIL OFL.
+   The file's weight axis is 400–800, and this face exposes that full range.
+   The UI uses 400, 500, and 700.
+   Inlined into index.html. After editing, run node scripts/inline-css.mjs
+   and then node scripts/stamp-sw.mjs. */
 @font-face {
     font-family: "JetBrains Mono";
     font-style: normal;
-    font-weight: 400 700;
+    font-weight: 400 800;
     font-display: swap;
     src: url("/assets/fonts/jetbrains-mono-latin.woff2") format("woff2");
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
