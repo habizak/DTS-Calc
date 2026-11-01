@@ -15,7 +15,8 @@
   - Zone Controls: `+ Add Zone` and `Delete` actions to manage pace zones
 - Unit toggle: Metric (km, km/h, min/km) or Imperial (mi, mph, min/mi)
 - Smart input: digits auto-format to time (e.g. `123456` → `01:23:45`) or pace (e.g. `530` → `05:30`)
-- LocalStorage persistence. The repository has no service worker, so a previously loaded page may continue working without a connection, but offline loading and installation behavior are not guaranteed.
+- LocalStorage persistence for calculator state
+- Home-screen launch: styles are inlined in the HTML, JetBrains Mono is self-hosted, and a cache-first service worker serves the shell while revalidating in the background. After one online visit, a later launch works offline and picks up a new deploy on the following open.
 - Reset: click clears values; long-press (≥500ms) factory resets
 - Mobile-first frame (393×852), responsive on desktop
 - Document scroll is locked. The header stays in the app column, and only an inner container scrolls, so iOS does not frost the header under the status bar
@@ -26,8 +27,8 @@
 | Layer | Technology |
 |-------|------------|
 | UI | Static HTML, vanilla JS ES modules |
-| Styling | CSS custom properties, JetBrains Mono font |
-| Persistence | localStorage |
+| Styling | CSS inlined from `css/styles.css`, self-hosted JetBrains Mono |
+| Persistence | localStorage, cache-first service worker (`sw.js`) |
 | Hosting | Vercel (static) |
 
 ## Architecture Overview
@@ -78,9 +79,10 @@ flowchart TB
 
 ```
 DTS-Calc/
-├── index.html       # App entrypoint
+├── index.html       # App entrypoint (styles inlined for first paint)
+├── sw.js            # Cache-first shell, stale-while-revalidate
 ├── css/
-│   └── styles.css   # Extracted app styles
+│   └── styles.css   # Source styles; inlined into index.html
 ├── js/
 │   ├── calculator.js
 │   ├── viewport-lock.js       # Keeps the fixed app above the keyboard
@@ -98,8 +100,11 @@ DTS-Calc/
 │   ├── icon-192.png           # 192×192 installed-app icon
 │   ├── icon-512.png           # 512×512 installed-app icon
 │   └── icon-maskable-512.png  # 512×512 maskable icon (same tile; padding covers the safe zone)
+├── assets/fonts/
+│   ├── jetbrains-mono-latin.woff2  # Latin variable font, weights 400–700
+│   └── OFL.txt
 ├── manifest.json    # App name and home-screen / installed-app icon set
-├── vercel.json      # Vercel rewrites (root → index.html)
+├── vercel.json      # Rewrite `/` → index.html; `sw.js` is `Cache-Control: no-cache`
 └── README.md
 ```
 
@@ -143,18 +148,22 @@ When the keyboard opens, `viewport-lock.js` sizes the app to the visible viewpor
 
 ## Getting Started
 
-**Prerequisites:** None (static HTML; open in browser or serve locally)
+**Prerequisites:** None to read the page. The service worker needs an http origin, so use a local server rather than opening the file directly.
 
 For regression tests and manual verification, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```bash
-# Option 1: Open directly
-open index.html
-
-# Option 2: Local server (e.g. Python)
 python3 -m http.server 8000
-# Visit http://localhost:8000/index.html
+# Visit http://localhost:8000/
 ```
+
+After editing `css/styles.css`, copy it into the page with `node scripts/inline-css.mjs`.
+
+## Loading
+
+The home-screen icon opens `start_url` `/`, which is inside manifest `scope` `/`. There is no redirect. `index.html` contains the full stylesheet, so the first paint does not wait on a second CSS request or on `fonts.googleapis.com`. JetBrains Mono is a self-hosted latin subset with `font-display: swap` (the face is discovered in that first HTML response, so it is not preloaded). Text uses `monospace` until the file arrives, then the same family, weights, and tabular figures as before.
+
+`sw.js` is registered from the `load` event. It is cache-first for the shell (HTML, CSS, JS, font, icons): a cached response is returned immediately and the network updates the `dts-calc-v1` cache in the background. The next launch sees that update. Older cache names are deleted on activate. The worker does not reload open pages. `vercel.json` sends `Cache-Control: no-cache` for `/sw.js` so the browser can detect a new worker script.
 
 **Deploy to Vercel:**
 
