@@ -1,12 +1,17 @@
 /* Cache-first shell. One cache holds one complete build.
-   A navigation is served entirely from the cache it was pinned to, including
-   scripts that load later (Multi). Revalidation fetches the whole shell with
-   cache:'no-cache' into a new cache and publishes that cache only for a
-   later navigation. The build hash below is stamped by scripts/stamp-sw.mjs. */
-const BUILD = 'ec4cfcd91f0ecc0221f3';
+   Cached HTML points scripts, icons, the manifest, and the font at
+   /b/<hash>/... so a page can only request that build's files, including
+   after this worker process is stopped and started again. A navigation
+   publishes a newly fetched shell only for a later navigation. Client ids
+   are stored in the meta cache so activate can keep a build an open page
+   still needs; that map is not used to choose which build a script comes
+   from. The build hash below is stamped by scripts/stamp-sw.mjs. */
+const BUILD = 'e5e53261116d9f676873';
 const META = 'dts-calc-meta';
 const ACTIVE_KEY = '/active';
+const CLIENTS_KEY = '/clients';
 const REFRESH = 'X-DTS-Refresh';
+const BOOT = crypto.randomUUID();
 
 const SHELL = [
     '/',
@@ -31,16 +36,58 @@ const SHELL = [
 ];
 
 const SHELL_PATHS = new Set(SHELL);
-const pins = new Map();
-let pinnedNavigation = null;
-let revalidateTask = Promise.resolve();
+let stateTask = Promise.resolve();
 
 function cacheName(hash) {
     return `dts-calc-${hash}`;
 }
 
+function enqueue(task) {
+    const run = stateTask.then(task, task);
+    stateTask = run.then(() => {}, () => {});
+    return run;
+}
+
 function offlineResponse() {
-    return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+    return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain', 'X-DTS-Boot': BOOT } });
+}
+
+function tag(response) {
+    const headers = new Headers(response.headers);
+    headers.set('X-DTS-Boot', BOOT);
+    return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+    });
+}
+
+function parseBuildPath(pathname) {
+    const match = /^\/b\/([0-9a-f]{20})(\/(?:js|assets)\/[^?#]+|\/manifest\.json)$/.exec(pathname);
+    if (!match || match[2].includes('..')) return null;
+    return { hash: match[1], path: match[2] };
+}
+
+function stampDocument(body, hash) {
+    const prefix = `/b/${hash}`;
+    const html = new TextDecoder().decode(body);
+    return new TextEncoder().encode(
+        html
+            .replaceAll('src="js/', `src="${prefix}/js/`)
+            .replaceAll('href="./', `href="${prefix}/`)
+            .replaceAll('url("/assets/', `url("${prefix}/assets/`),
+    );
+}
+
+function stampManifest(body, hash) {
+    const prefix = `/b/${hash}`;
+    const manifest = JSON.parse(new TextDecoder().decode(body));
+    if (Array.isArray(manifest.icons)) {
+        for (const icon of manifest.icons) {
+            if (typeof icon.src === 'string' && icon.src.startsWith('/')) icon.src = prefix + icon.src;
+        }
+    }
+    return new TextEncoder().encode(JSON.stringify(manifest));
 }
 
 async function hashShell(entries) {
@@ -77,12 +124,63 @@ async function writeActive(name) {
     await meta.put(ACTIVE_KEY, new Response(name));
 }
 
+async function readPins() {
+    const meta = await caches.open(META);
+    const response = await meta.match(CLIENTS_KEY);
+    if (!response) return {};
+    try {
+        const data = JSON.parse(await response.text());
+        return data && typeof data === 'object' ? data : {};
+    } catch {
+        return {};
+    }
+}
+
+async function writePins(pins) {
+    const meta = await caches.open(META);
+    await meta.put(CLIENTS_KEY, new Response(JSON.stringify(pins), {
+        headers: { 'Content-Type': 'application/json' },
+    }));
+}
+
+async function rememberPin(id, name) {
+    const pins = await readPins();
+    pins[id] = name;
+    await writePins(pins);
+}
+
+async function ensurePin(id, name) {
+    const pins = await readPins();
+    if (pins[id]) return;
+    pins[id] = name;
+    await writePins(pins);
+}
+
 async function deleteUnused(keep) {
     const names = await caches.keys();
     await Promise.all(names.map((name) => {
         if (!name.startsWith('dts-calc-') || keep.has(name)) return Promise.resolve();
         return caches.delete(name);
     }));
+}
+
+async function pruneCaches(protectName) {
+    const clients = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
+    const active = await readActive();
+    if (clients.length === 0) {
+        await writePins({});
+        await deleteUnused(new Set([META, active]));
+        return;
+    }
+    const ids = new Set(clients.map((client) => client.id));
+    const pins = await readPins();
+    const keep = new Set([META, active, protectName]);
+    for (const [id, name] of Object.entries(pins)) {
+        if (ids.has(id)) keep.add(name);
+        else delete pins[id];
+    }
+    await writePins(pins);
+    await deleteUnused(keep);
 }
 
 async function loadShell() {
@@ -98,9 +196,13 @@ async function loadShell() {
 }
 
 async function storeShell(name, items) {
+    const hash = name.slice('dts-calc-'.length);
     const cache = await caches.open(name);
     for (const item of items) {
-        await cache.put(item.path, new Response(item.body, {
+        let body = item.body;
+        if (item.path === '/' || item.path === '/index.html') body = stampDocument(body, hash);
+        else if (item.path === '/manifest.json') body = stampManifest(body, hash);
+        await cache.put(item.path, new Response(body, {
             headers: { 'Content-Type': item.type },
         }));
     }
@@ -109,6 +211,15 @@ async function storeShell(name, items) {
         await caches.delete(name);
         throw new Error('incomplete shell');
     }
+}
+
+async function fromCache(name, path) {
+    if (!(await caches.keys()).includes(name)) return offlineResponse();
+    const cache = await caches.open(name);
+    const cached = await cache.match(path)
+        || (path === '/' ? await cache.match('/index.html') : null)
+        || (path === '/index.html' ? await cache.match('/') : null);
+    return cached ? tag(cached) : offlineResponse();
 }
 
 self.addEventListener('install', (event) => {
@@ -121,60 +232,14 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil((async () => {
+    event.waitUntil(enqueue(async () => {
         const name = cacheName(BUILD);
         await writeActive(name);
-        await deleteUnused(new Set([name, META]));
-    })());
+        await pruneCaches(name);
+    }));
 });
 
-function remember(id, name) {
-    if (id) pins.set(id, name);
-    pinnedNavigation = name;
-}
-
-function pinnedFor(event) {
-    if (event.clientId && pins.has(event.clientId)) return pins.get(event.clientId);
-    if (event.resultingClientId && pins.has(event.resultingClientId)) return pins.get(event.resultingClientId);
-    return null;
-}
-
-async function fromCache(name, request, url) {
-    const cache = await caches.open(name);
-    const cached = await cache.match(request) || await cache.match(url.pathname);
-    if (cached) return cached;
-    if (request.mode === 'navigate') {
-        return (await cache.match('/index.html'))
-            || (await cache.match('/'))
-            || offlineResponse();
-    }
-    if (SHELL_PATHS.has(url.pathname)) return offlineResponse();
-    try {
-        return await fetch(request);
-    } catch {
-        return offlineResponse();
-    }
-}
-
-function revalidateShell(protect) {
-    const run = revalidateTask.then(() => revalidateShellOnce(protect));
-    revalidateTask = run.catch(() => {});
-    return run;
-}
-
-async function cachesInUse(protect) {
-    const clients = await self.clients.matchAll({ includeUncontrolled: true });
-    const ids = new Set(clients.map((client) => client.id));
-    const keep = new Set();
-    if (protect) keep.add(protect);
-    for (const [id, name] of pins) {
-        if (ids.has(id)) keep.add(name);
-        else pins.delete(id);
-    }
-    return keep;
-}
-
-async function revalidateShellOnce(protect) {
+async function revalidateShellOnce(protectName) {
     let items;
     try {
         items = await loadShell();
@@ -192,8 +257,7 @@ async function revalidateShellOnce(protect) {
         }
         await writeActive(name);
     }
-    const keep = new Set([name, META, ...(await cachesInUse(protect))]);
-    await deleteUnused(keep);
+    await pruneCaches(protectName || name);
 }
 
 self.addEventListener('fetch', (event) => {
@@ -205,23 +269,35 @@ self.addEventListener('fetch', (event) => {
     if (url.origin !== self.location.origin) return;
     if (url.pathname === '/sw.js') return;
 
-    event.respondWith((async () => {
-        let name = pinnedFor(event);
-        if (request.mode === 'navigate' || !name) {
-            if (request.mode === 'navigate') {
-                name = await readActive();
-                remember(event.resultingClientId || event.clientId, name);
-                const published = name;
-                try {
-                    event.waitUntil(revalidateShell(published));
-                } catch {
-                    revalidateShell(published);
-                }
-            } else {
-                name = pinnedNavigation || await readActive();
-                if (event.clientId) pins.set(event.clientId, name);
-            }
-        }
-        return fromCache(name, request, url);
-    })());
+    const build = parseBuildPath(url.pathname);
+    if (build) {
+        const name = cacheName(build.hash);
+        if (event.clientId) event.waitUntil(enqueue(() => ensurePin(event.clientId, name)));
+        event.respondWith(fromCache(name, build.path));
+        return;
+    }
+
+    const navigation = request.mode === 'navigate' && (url.pathname === '/' || url.pathname === '/index.html');
+    if (navigation) {
+        const path = url.pathname === '/index.html' ? '/index.html' : '/';
+        const job = (async () => {
+            const name = await readActive();
+            const id = event.resultingClientId || event.clientId;
+            if (id) await enqueue(() => rememberPin(id, name));
+            return { name, response: await fromCache(name, path) };
+        })();
+        event.respondWith(job.then((result) => result.response));
+        event.waitUntil(job.then(({ name }) => enqueue(() => revalidateShellOnce(name))));
+        return;
+    }
+
+    if (SHELL_PATHS.has(url.pathname)) {
+        event.respondWith((async () => {
+            const pins = await readPins();
+            const named = event.clientId ? pins[event.clientId] : '';
+            if (named) return fromCache(named, url.pathname);
+            if (url.pathname.startsWith('/js/')) return offlineResponse();
+            return fromCache(await readActive(), url.pathname);
+        })());
+    }
 });

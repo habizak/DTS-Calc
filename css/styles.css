@@ -1,8 +1,7 @@
 /* Self-hosted latin variable subset of JetBrains Mono, SIL OFL.
    The file's weight axis is 400–800, and this face exposes that full range.
    The UI uses 400, 500, and 700.
-   Inlined into index.html. After editing, run node scripts/inline-css.mjs
-   and then node scripts/stamp-sw.mjs. */
+   Inlined into index.html. After editing, run npm run build. */
 @font-face {
     font-family: "JetBrains Mono";
     font-style: normal;

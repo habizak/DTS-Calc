@@ -3,6 +3,14 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { SHELL, hashShell, readShellEntries } from '../scripts/shell-hash.mjs';
 
+test('the build stamps sw.js before a deploy', async () => {
+    const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+    assert.match(pkg.scripts.build, /scripts\/inline-css\.mjs/);
+    assert.match(pkg.scripts.build, /scripts\/stamp-sw\.mjs/);
+    const vercel = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8'));
+    assert.equal(vercel.buildCommand, 'npm run build');
+});
+
 test('the document inlines styles and does not block on Google Fonts', async () => {
     const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
     const css = (await readFile(new URL('../css/styles.css', import.meta.url), 'utf8')).replace(/\s+$/, '');
@@ -37,6 +45,10 @@ test('manifest scope covers start_url and the worker is cache-first', async () =
     assert.notEqual(hashShell(changed), hash);
     assert.match(sw, /caches\.delete/);
     assert.match(sw, /cache:\s*'no-cache'/);
+    assert.equal(sw.includes('pinnedNavigation'), false);
+    assert.equal(sw.includes('new Map('), false);
+    assert.match(sw, /\/b\//);
+    assert.match(sw, /CLIENTS_KEY/);
     assert.equal(sw.includes('skipWaiting'), false);
     assert.equal(sw.includes('clients.claim'), false);
     assert.equal(sw.includes('location.reload'), false);

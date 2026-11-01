@@ -40,6 +40,7 @@ function applyRevision(path, body, revision) {
 }
 
 let shellRevision = 'A';
+let swSuffix = '';
 /** @type {import('node:http').Server} */
 let server;
 let base;
@@ -72,7 +73,7 @@ function listen() {
                     'Content-Type': 'text/javascript; charset=utf-8',
                     'Cache-Control': 'no-cache',
                 });
-                response.end(source);
+                response.end(source + swSuffix);
                 return;
             }
             let body = applyRevision(url.pathname === '/' ? '/' : url.pathname, await readFile(filePath), shellRevision);
@@ -151,6 +152,34 @@ async function coldFcp(browserType, userAgent, throttle) {
     const google = await page.evaluate(() => performance.getEntriesByType('resource').some((entry) => entry.name.includes('fonts.googleapis.com') || entry.name.includes('fonts.gstatic.com')));
     await browser.close();
     return { ...timing, google };
+}
+
+async function stopWorkers(context, page) {
+    if (context.browser().browserType().name() === 'chromium') {
+        const session = await context.newCDPSession(page);
+        await session.send('ServiceWorker.enable');
+        await session.send('ServiceWorker.stopAllWorkers');
+        await page.waitForTimeout(100);
+        return;
+    }
+    // WebKit has no CDP stop. Replace the running worker so its process and
+    // in-memory state are gone while the page stays open.
+    swSuffix = '\nself.addEventListener("install", (event) => { event.waitUntil(self.skipWaiting()); });\nself.addEventListener("activate", (event) => { event.waitUntil(self.clients.claim()); });\n';
+    try {
+        await page.evaluate(async () => {
+            const registration = await navigator.serviceWorker.getRegistration();
+            await registration.update();
+            await new Promise((resolve) => {
+                const timer = setTimeout(resolve, 8000);
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    clearTimeout(timer);
+                    resolve();
+                });
+            });
+        });
+    } finally {
+        swSuffix = '';
+    }
 }
 
 async function until(page, fn, timeout = 15000) {
@@ -359,6 +388,64 @@ test('a deploy stays on one shell until the second launch', { timeout: 180000 },
             await second.locator('#modeSingle').click();
             await useCalculator(second);
             console.log(name, 'deploy shells match');
+        } finally {
+            await browser.close();
+        }
+    }
+});
+
+test('a stopped worker cannot mix a newer build into an old tab', { timeout: 180000 }, async () => {
+    for (const [name, browserType, userAgent] of [
+        ['chromium', chromium, CHROME_UA],
+        ['webkit', webkit, IOS_UA],
+    ]) {
+        shellRevision = 'A';
+        const { browser, context } = await mobile(browserType, userAgent);
+        try {
+            const tabA = await installShell(context);
+            await tabA.evaluate(() => localStorage.setItem('pace-mode', 'single'));
+            const before = await tabA.evaluate(async () => {
+                const src = document.querySelector('script[type="module"]').getAttribute('src');
+                const boot = await fetch(new URL(src, location.href), { cache: 'no-store' }).then((response) => response.headers.get('x-dts-boot'));
+                return { src, boot, html: document.querySelector('meta[name="dts-shell"]').content };
+            });
+            assert.equal(before.html, 'A');
+            assert.match(before.src, /^\/b\/[0-9a-f]{20}\/js\/calculator\.js$/);
+            assert.ok(before.boot, `${name} missing worker boot id`);
+
+            shellRevision = 'B';
+            const tabB = await context.newPage();
+            await tabB.goto(base, { waitUntil: 'load', timeout: 30000 });
+            assert.equal(await tabA.locator('meta[name="dts-shell"]').getAttribute('content'), 'A');
+            await until(tabB, async () => {
+                const meta = await caches.open('dts-calc-meta');
+                const pointer = await meta.match('/active');
+                if (!pointer) return false;
+                const cache = await caches.open((await pointer.text()).trim());
+                const multi = await cache.match('/js/multi-pace.js');
+                return !!(multi && (await multi.text()).includes('multi:"B"'));
+            }, 20000);
+
+            await stopWorkers(context, tabA);
+            const booted = await tabA.evaluate(async () => {
+                const src = document.querySelector('script[type="module"]').getAttribute('src');
+                const boot = await fetch(new URL(src, location.href), { cache: 'no-store' }).then((response) => response.headers.get('x-dts-boot'));
+                return boot;
+            });
+            assert.notEqual(booted, before.boot, `${name} worker was still the same process`);
+            assertVersion(await markers(tabA), 'A');
+            const scripts = await tabA.evaluate(() => performance.getEntriesByType('resource')
+                .map((entry) => entry.name)
+                .filter((url) => /\/js\/(?:calculator|multi-pace|gpx)\.js(?:\?|$)/.test(url)));
+            assert.ok(scripts.some((url) => url.includes('/js/multi-pace.js')), scripts.join('\n'));
+            assert.ok(scripts.some((url) => url.includes('/js/gpx.js')), scripts.join('\n'));
+            const hashes = new Set(scripts.map((url) => {
+                const match = url.match(/\/b\/([0-9a-f]{20})\//);
+                return match ? match[1] : url;
+            }));
+            assert.equal(hashes.size, 1, scripts.join('\n'));
+            assert.equal([...hashes][0], before.src.split('/')[2]);
+            console.log(name, 'old tab stayed on one build after worker stop');
         } finally {
             await browser.close();
         }
