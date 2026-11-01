@@ -48,7 +48,10 @@ let base;
 function listen() {
     server = createServer(async (request, response) => {
         const url = new URL(request.url, 'http://127.0.0.1');
-        let pathname = decodeURIComponent(url.pathname);
+        let logical = decodeURIComponent(url.pathname);
+        const hashed = logical.match(/^\/b\/[^/]+(\/.*)$/);
+        if (hashed) logical = hashed[1];
+        let pathname = logical;
         if (pathname.endsWith('/')) pathname += 'index.html';
         const relative = pathname.replace(/^\/+/, '');
         const filePath = normalize(join(root, relative));
@@ -76,7 +79,7 @@ function listen() {
                 response.end(source + swSuffix);
                 return;
             }
-            let body = applyRevision(url.pathname === '/' ? '/' : url.pathname, await readFile(filePath), shellRevision);
+            let body = applyRevision(logical === '/' ? '/' : logical, await readFile(filePath), shellRevision);
             const cacheControl = 'public, max-age=0, must-revalidate';
             response.writeHead(200, {
                 'Content-Type': TYPES[extname(filePath)] || 'application/octet-stream',
@@ -388,6 +391,56 @@ test('a deploy stays on one shell until the second launch', { timeout: 180000 },
             await second.locator('#modeSingle').click();
             await useCalculator(second);
             console.log(name, 'deploy shells match');
+        } finally {
+            await browser.close();
+        }
+    }
+});
+
+test('a hashed icon URL is a real file when the worker is bypassed', async () => {
+    const response = await fetch(`${base}b/0123456789abcdef0123/assets/apple-touch-icon.png`);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('content-type'), 'image/png');
+    assert.ok((await response.arrayBuffer()).byteLength > 100);
+});
+
+test('a missing build cache is rebuilt on the next online launch', { timeout: 120000 }, async () => {
+    for (const [name, browserType, userAgent] of [
+        ['chromium', chromium, CHROME_UA],
+        ['webkit', webkit, IOS_UA],
+    ]) {
+        shellRevision = 'A';
+        const { browser, context } = await mobile(browserType, userAgent);
+        try {
+            const page = await installShell(context);
+            assert.equal(await page.locator('link[rel="apple-touch-icon"]').getAttribute('href'), './assets/apple-touch-icon.png');
+            assert.equal(await page.locator('link[rel="manifest"]').getAttribute('href'), './manifest.json');
+            const removed = await page.evaluate(async () => {
+                const names = await caches.keys();
+                const build = names.filter((cacheName) => cacheName.startsWith('dts-calc-') && cacheName !== 'dts-calc-meta');
+                await Promise.all(build.map((cacheName) => caches.delete(cacheName)));
+                const meta = await caches.open('dts-calc-meta');
+                const pointer = await meta.match('/active');
+                return { build, active: pointer ? (await pointer.text()).trim() : '' };
+            });
+            assert.ok(removed.build.length > 0);
+            assert.ok(removed.active);
+            await page.goto(base, { waitUntil: 'load', timeout: 30000 });
+            const timing = await paintTimes(page);
+            assert.equal(timing.title, 'DTS-Calc', name);
+            assert.equal(timing.background, 'rgb(194, 7, 7)');
+            await until(page, async () => {
+                const meta = await caches.open('dts-calc-meta');
+                const pointer = await meta.match('/active');
+                if (!pointer) return false;
+                const cacheName = (await pointer.text()).trim();
+                if (!(await caches.keys()).includes(cacheName)) return false;
+                const cache = await caches.open(cacheName);
+                const html = await cache.match('/index.html');
+                const script = await cache.match('/js/calculator.js');
+                return !!(html && script);
+            }, 20000);
+            console.log(name, 'rebuilt missing build cache');
         } finally {
             await browser.close();
         }

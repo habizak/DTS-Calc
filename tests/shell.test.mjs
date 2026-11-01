@@ -2,6 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { SHELL, hashShell, readShellEntries } from '../scripts/shell-hash.mjs';
+import { inlineCss } from '../scripts/inline-css.mjs';
+
+test('inlining css detects the style tag and leaves an up-to-date page unchanged', () => {
+    const html = '<style id="app-css">\nold\n</style>';
+    const once = inlineCss(html, 'new');
+    assert.equal(once, '<style id="app-css">\nnew\n</style>');
+    assert.equal(inlineCss(once, 'new'), once);
+    assert.throws(() => inlineCss('<head></head>', 'new'), /app-css/);
+});
 
 test('the build stamps sw.js before a deploy', async () => {
     const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
@@ -44,6 +53,7 @@ test('manifest scope covers start_url and the worker is cache-first', async () =
         : entry);
     assert.notEqual(hashShell(changed), hash);
     assert.match(sw, /caches\.delete/);
+    assert.match(sw, /caches\.has/);
     assert.match(sw, /cache:\s*'no-cache'/);
     assert.equal(sw.includes('pinnedNavigation'), false);
     assert.equal(sw.includes('new Map('), false);
@@ -58,4 +68,7 @@ test('manifest scope covers start_url and the worker is cache-first', async () =
     const swHeader = vercel.headers.find((entry) => entry.source === '/sw.js');
     assert.equal(swHeader.headers[0].key, 'Cache-Control');
     assert.equal(swHeader.headers[0].value, 'no-cache');
+    const buildRewrite = vercel.rewrites.find((entry) => entry.source === '/b/:hash/:path*');
+    assert.equal(buildRewrite.destination, '/:path*');
+    assert.equal(vercel.rewrites.some((entry) => entry.source === '/' && entry.destination === '/index.html'), true);
 });

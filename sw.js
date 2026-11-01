@@ -1,11 +1,13 @@
 /* Cache-first shell. One cache holds one complete build.
-   Cached HTML points scripts, icons, the manifest, and the font at
-   /b/<hash>/... so a page can only request that build's files, including
-   after this worker process is stopped and started again. A navigation
-   publishes a newly fetched shell only for a later navigation. Client ids
-   are stored in the meta cache so activate can keep a build an open page
-   still needs; that map is not used to choose which build a script comes
-   from. The build hash below is stamped by scripts/stamp-sw.mjs. */
+   Cached HTML points scripts and the font at /b/<hash>/... so a page can
+   only request that build's files, including after this worker process is
+   stopped and started again. Icons and the manifest keep stable URLs.
+   A navigation publishes a newly fetched shell only for a later navigation.
+   If the current build cache is missing, the response comes from the network
+   and the refresh stores it again. Client ids are stored in the meta cache
+   so activate can keep a build an open page still needs; that map is not
+   used to choose which build a script comes from. The build hash below is
+   stamped by scripts/stamp-sw.mjs. */
 const BUILD = 'e5e53261116d9f676873';
 const META = 'dts-calc-meta';
 const ACTIVE_KEY = '/active';
@@ -74,20 +76,8 @@ function stampDocument(body, hash) {
     return new TextEncoder().encode(
         html
             .replaceAll('src="js/', `src="${prefix}/js/`)
-            .replaceAll('href="./', `href="${prefix}/`)
             .replaceAll('url("/assets/', `url("${prefix}/assets/`),
     );
-}
-
-function stampManifest(body, hash) {
-    const prefix = `/b/${hash}`;
-    const manifest = JSON.parse(new TextDecoder().decode(body));
-    if (Array.isArray(manifest.icons)) {
-        for (const icon of manifest.icons) {
-            if (typeof icon.src === 'string' && icon.src.startsWith('/')) icon.src = prefix + icon.src;
-        }
-    }
-    return new TextEncoder().encode(JSON.stringify(manifest));
 }
 
 async function hashShell(entries) {
@@ -201,7 +191,6 @@ async function storeShell(name, items) {
     for (const item of items) {
         let body = item.body;
         if (item.path === '/' || item.path === '/index.html') body = stampDocument(body, hash);
-        else if (item.path === '/manifest.json') body = stampManifest(body, hash);
         await cache.put(item.path, new Response(body, {
             headers: { 'Content-Type': item.type },
         }));
@@ -213,8 +202,18 @@ async function storeShell(name, items) {
     }
 }
 
+async function fromNetwork(path) {
+    try {
+        const response = await fetch(path, { cache: 'no-cache', headers: { [REFRESH]: '1' } });
+        if (response.ok) return response;
+    } catch {
+        /* offline */
+    }
+    return offlineResponse();
+}
+
 async function fromCache(name, path) {
-    if (!(await caches.keys()).includes(name)) return offlineResponse();
+    if (!(await caches.has(name))) return fromNetwork(path);
     const cache = await caches.open(name);
     const cached = await cache.match(path)
         || (path === '/' ? await cache.match('/index.html') : null)
@@ -249,7 +248,7 @@ async function revalidateShellOnce(protectName) {
     const hash = await hashShell(items);
     const name = cacheName(hash);
     const current = await readActive();
-    if (name !== current) {
+    if (name !== current || !(await caches.has(name))) {
         try {
             await storeShell(name, items);
         } catch {

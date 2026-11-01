@@ -10,5 +10,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm run build && git diff --exit-code
       - run: npx playwright install --with-deps chromium webkit
       - run: npm test

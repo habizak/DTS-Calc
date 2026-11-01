@@ -157,13 +157,13 @@ python3 -m http.server 8000
 # Visit http://localhost:8000/
 ```
 
-After editing `css/styles.css` or any other shell file, run `npm run build`. That inlines the stylesheet and stamps the service worker's build hash. Vercel runs the same command before deploy (`buildCommand` in `vercel.json`).
+After editing `css/styles.css` or any other shell file, run `npm run build`. That inlines the stylesheet and stamps the service worker's build hash. Running it again on an up-to-date tree changes nothing. Vercel runs the same command before deploy (`buildCommand` in `vercel.json`), and CI fails if the build would edit a committed file.
 
 ## Loading
 
 The home-screen icon opens `start_url` `/`, which is inside manifest `scope` `/`. There is no redirect. `index.html` contains the full stylesheet, so the first paint does not wait on a second CSS request or on `fonts.googleapis.com`. JetBrains Mono is a self-hosted latin subset with `font-display: swap` (the face is discovered in that first HTML response, so it is not preloaded). The font file's weight axis is 400–800 and the face exposes that range. Text uses `monospace` until the file arrives, then the same family and tabular figures as before.
 
-`sw.js` is registered from the `load` event. It is cache-first for one whole shell (HTML, JS, font, icons). The build hash in the cache name is the hash of those files, stamped by `npm run build`, so a deploy installs a new worker that precaches the full list. Cached HTML points its scripts, icons, manifest, and font at `/b/<hash>/...`. A later request can only be satisfied from that build's cache, including Multi opened after the worker process has stopped. A navigation also refetches the whole list with `cache: 'no-cache'` into a new cache and publishes it only when every file is stored. The open that discovers the deploy keeps the previous shell, including Multi if it is opened later. The second launch after the deploy runs the new shell. Activate deletes caches from other builds once no open page still needs them; which page needs which build is stored in the cache, not only in the worker process. The worker does not reload open pages. `css/styles.css` is not requested at runtime, so it is not part of the shell. `vercel.json` sends `Cache-Control: no-cache` for `/sw.js` so the browser can detect a new worker script.
+`sw.js` is registered from the `load` event. It is cache-first for one whole shell (HTML, JS, font, icons). The build hash in the cache name is the hash of those files, stamped by `npm run build`, so a deploy installs a new worker that precaches the full list. Cached HTML points its scripts and font at `/b/<hash>/...`. Icons and the manifest stay on stable URLs such as `/assets/apple-touch-icon.png` and `/manifest.json`, so a home-screen fetch that does not go through the worker still finds them. `vercel.json` rewrites `/b/<hash>/...` to the same file on disk. A later script request is served from that build's cache, including Multi opened after the worker process has stopped. A navigation also refetches the whole list with `cache: 'no-cache'` into a new cache and publishes it only when every file is stored. If the current build cache is missing while its meta entry remains, that launch reads the shell from the network and stores the cache again. The open that discovers the deploy keeps the previous shell, including Multi if it is opened later. The second launch after the deploy runs the new shell. Activate deletes caches from other builds once no open page still needs them; which page needs which build is stored in the cache, not only in the worker process. The worker does not reload open pages. `css/styles.css` is not requested at runtime, so it is not part of the shell. `vercel.json` sends `Cache-Control: no-cache` for `/sw.js` so the browser can detect a new worker script.
 
 **Deploy to Vercel:**
 
@@ -171,4 +171,4 @@ The home-screen icon opens `start_url` `/`, which is inside manifest `scope` `/`
 vercel
 ```
 
-`vercel.json` rewrites `/` to `/index.html`.
+`vercel.json` rewrites `/` to `/index.html`, and `/b/<hash>/<path>` to `/<path>`.

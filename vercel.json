@@ -1,6 +1,9 @@
 {
   "buildCommand": "npm run build",
-  "rewrites": [{ "source": "/", "destination": "/index.html" }],
+  "rewrites": [
+    { "source": "/b/:hash/:path*", "destination": "/:path*" },
+    { "source": "/", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/sw.js",
