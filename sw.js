@@ -202,6 +202,11 @@ async function storeShell(name, items) {
     }
 }
 
+/* A /b/<hash>/ miss whose cache was evicted loads the canonical file, which
+   is also what the /b/ rewrite serves when the request never hits this
+   worker. If an open page's older build is gone, that one response is the
+   current file and can differ from the rest of the page until the next
+   navigation. That brief mix is accepted. */
 async function fromNetwork(path) {
     try {
         const response = await fetch(path, { cache: 'no-cache', headers: { [REFRESH]: '1' } });

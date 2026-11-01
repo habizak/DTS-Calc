@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { SHELL, hashShell, readShellEntries } from '../scripts/shell-hash.mjs';
 import { inlineCss } from '../scripts/inline-css.mjs';
+import { deployFiles, emitDist } from '../scripts/emit-dist.mjs';
 
 test('inlining css detects the style tag and leaves an up-to-date page unchanged', () => {
     const html = '<style id="app-css">\nold\n</style>';
@@ -16,8 +19,30 @@ test('the build stamps sw.js before a deploy', async () => {
     const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
     assert.match(pkg.scripts.build, /scripts\/inline-css\.mjs/);
     assert.match(pkg.scripts.build, /scripts\/stamp-sw\.mjs/);
+    assert.match(pkg.scripts.build, /scripts\/emit-dist\.mjs/);
     const vercel = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8'));
+    assert.equal(vercel.framework, null);
     assert.equal(vercel.buildCommand, 'npm run build');
+    assert.equal(vercel.outputDirectory, 'dist');
+});
+
+test('dist contains the shell and not the tests or build scripts', async () => {
+    const dist = join(fileURLToPath(new URL('..', import.meta.url)), 'dist');
+    await emitDist(dist);
+    const found = [];
+    async function walk(directory, prefix = '') {
+        for (const entry of await readdir(directory, { withFileTypes: true })) {
+            const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+            if (entry.isDirectory()) await walk(join(directory, entry.name), relative);
+            else found.push(relative);
+        }
+    }
+    await walk(dist);
+    found.sort();
+    const expected = [...deployFiles()].sort();
+    assert.deepEqual(found, expected);
+    assert.equal(found.includes('sw.js'), true);
+    assert.equal(found.some((file) => file.startsWith('tests/') || file.startsWith('scripts/')), false);
 });
 
 test('the document inlines styles and does not block on Google Fonts', async () => {

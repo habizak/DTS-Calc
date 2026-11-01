@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/inline-css.mjs && node scripts/stamp-sw.mjs",
+    "build": "node scripts/inline-css.mjs && node scripts/stamp-sw.mjs && node scripts/emit-dist.mjs",
     "test": "node --test tests/*.test.mjs"
   },
   "engines": {
