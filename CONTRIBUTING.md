@@ -1,9 +1,10 @@
 # Contributing
 
-Serve the static site with `python3 -m http.server 8000` and open http://localhost:8000. Node 20 or newer and the locked development dependencies are needed for regression tests:
+Serve the static site with `python3 -m http.server 8000` and open http://localhost:8000. Node 20 or newer and the locked development dependencies are needed for regression tests. The load tests use Playwright (Chromium and WebKit):
 
 ```sh
 npm ci
+npx playwright install --with-deps chromium webkit
 npm test
 ```
 
