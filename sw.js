@@ -8,7 +8,7 @@
    so activate can keep a build an open page still needs; that map is not
    used to choose which build a script comes from. The build hash below is
    stamped by scripts/stamp-sw.mjs. */
-const BUILD = 'e5e53261116d9f676873';
+const BUILD = '22debc1d8a9245c3276a';
 const META = 'dts-calc-meta';
 const ACTIVE_KEY = '/active';
 const CLIENTS_KEY = '/clients';
