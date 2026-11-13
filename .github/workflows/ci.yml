@@ -24,3 +24,6 @@ jobs:
         if: github.event.pull_request.draft == false
       - run: npm run build
         if: github.event.pull_request.draft == false
+      - name: First-load JavaScript is within the budget
+        run: node .monoform/tools/size.mjs .
+        if: github.event.pull_request.draft == false
