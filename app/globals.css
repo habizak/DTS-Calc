@@ -1,7 +1,13 @@
+/* Tailwind is loaded without its base reset (preflight). DTS-Calc keeps its own reset below,
+   so the screen looks exactly as it did before the move to Next.js. */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
+
+/* Everything below is the old css/styles.css, moved unchanged. */
 /* Self-hosted latin variable subset of JetBrains Mono, SIL OFL.
    The file's weight axis is 400–800, and this face exposes that full range.
-   The UI uses 400, 500, and 700.
-   Inlined into index.html. After editing, run npm run build. */
+   The UI uses 400, 500, and 700. */
 @font-face {
     font-family: "JetBrains Mono";
     font-style: normal;

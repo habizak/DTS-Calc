@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "types": ["react", "react-dom", "node"],
+    "allowJs": true,
+    "incremental": true,
+    "isolatedModules": true,
+    "plugins": [{ "name": "next" }]
+  },
+  "include": ["app", "components", "hooks", "lib", "store", "e2e", "types", "next-env.d.ts", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
+  "exclude": ["node_modules", "vitest.config.ts", "vitest.setup.ts"]
+}
