@@ -1,0 +1,21 @@
+{
+  "(app)::reduced-motion": 1,
+  "css/styles.css::colour-literal": 13,
+  "css/styles.css::font-size": 19,
+  "css/styles.css::letter-spacing": 1,
+  "css/styles.css::no-easing": 2,
+  "css/styles.css::outline-removed": 1,
+  "css/styles.css::radius": 1,
+  "css/styles.css::spacing": 32,
+  "css/styles.css::transition": 2,
+  "css/styles.css::viewport-unit": 1,
+  "index.html::colour-literal": 13,
+  "index.html::font-size": 19,
+  "index.html::letter-spacing": 1,
+  "index.html::no-easing": 2,
+  "index.html::outline-removed": 1,
+  "index.html::radius": 1,
+  "index.html::spacing": 32,
+  "index.html::transition": 2,
+  "index.html::viewport-unit": 1
+}
