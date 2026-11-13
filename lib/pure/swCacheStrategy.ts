@@ -95,9 +95,10 @@ export function isHashedNextStatic(pathname: string): boolean {
   return pathname.startsWith('/_next/static/')
 }
 
-/** Small shell files — SWR is fine; offline still served from cache. */
+/** Files under /assets/ and the manifest: precached at install, then SWR. Offline is served from the cache. */
 export function isShellStaticAsset(pathname: string): boolean {
-  return pathname === '/assets/dts-calc-favicon.svg' || pathname === '/manifest.json'
+  // Everything under /assets/ ships with the build (fonts, icons, artwork) and is precached at install.
+  return pathname.startsWith('/assets/') || pathname === '/manifest.json'
 }
 
 /**

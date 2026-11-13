@@ -8,7 +8,7 @@
  * - Nothing cached for that pathname: wait for the network. Do not substitute
  *   the home document. Offline with no cache for that path returns an error.
  * - /_next/static/*: cache-first (content-hashed, immutable)
- * - favicon / manifest: stale-while-revalidate
+ * - /assets/* (fonts, icons, artwork) and the manifest: precached at install, then stale-while-revalidate
  * - Flight / RSC: network only. Never cache a URL with an _rsc query param, an
  *   RSC: 1 header, or a Next-Router-Prefetch / Next-Router-State-Tree header.
  *   A non-navigation GET that carries ?edit= is network-only too.
@@ -67,7 +67,8 @@ function isHashedNextStatic(pathname) {
 }
 
 function isShellStaticAsset(pathname) {
-  return pathname === '/assets/dts-calc-favicon.svg' || pathname === '/manifest.json'
+  // Everything under /assets/ ships with the build (fonts, icons, artwork) and is precached at install.
+  return pathname.startsWith('/assets/') || pathname === '/manifest.json'
 }
 
 function classifyRequest(pathname, isNavigation) {
@@ -522,7 +523,7 @@ async function precacheShell(cache) {
   if (!Array.isArray(listed)) throw new Error('precache-incomplete')
 
   for (const url of listed) {
-    if (typeof url !== 'string' || !url.startsWith('/_next/static/')) {
+    if (typeof url !== 'string' || !(url.startsWith('/_next/static/') || url.startsWith('/assets/'))) {
       throw new Error('precache-incomplete')
     }
     const ok = await ensureStatic(cache, url)
