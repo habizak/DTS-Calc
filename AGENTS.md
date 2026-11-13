@@ -2,7 +2,7 @@
 
 Read README.md and CONTRIBUTING.md before making changes. Preserve calculation accuracy, units, rounding and local-storage data (key `pace-calculator-state`, same JSON shape). The fixed mobile viewport and keyboard behavior are intentional; check narrow and short screens when modifying layout. Do not claim installed or offline behavior without testing it on the deployed origin.
 
-Stack: Next 16 (App Router), React 18, strict TypeScript, Tailwind 4, Vitest, Playwright. Node 24 only (`.nvmrc`).
+Stack: Next 16 (App Router), React 19, strict TypeScript, Tailwind 4, Vitest, Playwright. Node 24 only (`.nvmrc`).
 
 | Task | Command |
 |---|---|

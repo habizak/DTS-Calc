@@ -19,7 +19,7 @@
 
 | Layer | Technology |
 |-------|------------|
-| UI | Next 16 App Router, React 18, strict TypeScript, one client component |
+| UI | Next 16 App Router, React 19, strict TypeScript, one client component |
 | Styling | `app/globals.css` (plain CSS, Tailwind loaded without its reset), self-hosted JetBrains Mono |
 | Logic | `lib/pure/*`, no side effects, pinned by tests |
 | Persistence | localStorage (`pace-calculator-state`), service worker (`public/sw.js`) |
