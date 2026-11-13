@@ -27,6 +27,16 @@ function readSaved(): string | null {
   }
 }
 
+/** Multi mode was removed (APP-242). Clear its two leftover keys once, on load. Never touches STORAGE_KEY. */
+function clearRemovedModeKeys(): void {
+  try {
+    localStorage.removeItem('multi-pace-state')
+    localStorage.removeItem('pace-mode')
+  } catch {
+    // Storage can be blocked; nothing to clean in that case.
+  }
+}
+
 function writeSaved(state: CalculatorState): void {
   try {
     localStorage.setItem(STORAGE_KEY, serializeState(state))
@@ -69,6 +79,7 @@ export default function PaceCalculator() {
 
   // Saved values are read once on load, as before. Nothing is computed or written at that point.
   useEffect(() => {
+    clearRemovedModeKeys()
     const loaded = loadState(readSaved())
     stateRef.current = loaded
     setState(loaded)

@@ -48,6 +48,34 @@ test('saved values survive a reload', async ({ page }) => {
   )
 })
 
+test('an install that had Multi saved loads Single and clears the two old keys, keeping the saved calculator state', async ({ page }) => {
+  const problems: string[] = []
+  page.on('pageerror', (error) => problems.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') problems.push(message.text())
+  })
+  await page.goto('/')
+  await tenKmInFifty(page)
+  await page.evaluate(() => {
+    localStorage.setItem('pace-mode', 'multi')
+    localStorage.setItem('multi-pace-state', '{"zones":[]}')
+  })
+  await page.reload()
+  await expect(page.locator('#timeInput')).toHaveValue('00:50:00')
+  await expect(page.locator('#singlePaceApp')).toBeVisible()
+  await expect(page.locator('#modeSingle, #modeMulti')).toHaveCount(0)
+  await expect
+    .poll(() =>
+      page.evaluate(() => [
+        localStorage.getItem('pace-mode'),
+        localStorage.getItem('multi-pace-state'),
+        localStorage.getItem('pace-calculator-state') !== null,
+      ]),
+    )
+    .toEqual([null, null, true])
+  expect(problems).toEqual([])
+})
+
 test('the app loads from the service worker with the network off and still calculates', async ({ page, context }) => {
   await page.goto('/')
   await controlled(page)
