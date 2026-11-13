@@ -10,6 +10,7 @@
     "skipLibCheck": true,
     "strict": true,
     "jsx": "react-jsx",
+    "paths": { "@monoform/ui": ["./.monoform/ui/index.ts"] },
     "noEmit": true,
     "types": ["react", "react-dom", "node"],
     "allowJs": true,

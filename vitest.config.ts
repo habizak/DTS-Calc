@@ -4,6 +4,7 @@ import { defineConfig } from 'vitest/config'
 const nvmrcPath = fileURLToPath(new URL('./.nvmrc', import.meta.url))
 
 export default defineConfig({
+  resolve: { alias: { '@monoform/ui': fileURLToPath(new URL('./.monoform/ui/index.ts', import.meta.url)) } },
   define: { __STARTER_NVMRC_PATH__: JSON.stringify(nvmrcPath) },
   test: {
     environment: 'jsdom',

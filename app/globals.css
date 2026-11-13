@@ -21,7 +21,6 @@
     --single-value-line: 0.96;
     --single-field-gap: clamp(var(--space-4), 4vh, var(--space-8));
     --single-footer-gap: var(--space-4);
-    --icon-size: 1.375rem;
 }
 
 * {
@@ -125,13 +124,6 @@ button {
     height: var(--space-6);
 }
 
-.ctds-toggle:focus-visible,
-.ctds-circle:focus-visible,
-.ctds-reset-btn:focus-visible {
-    outline: 1px solid var(--color-text-primary);
-    outline-offset: var(--space-0-5);
-}
-
 .ctds-single-shell {
     display: flex;
     flex-direction: column;
@@ -223,81 +215,19 @@ button {
     gap: var(--single-footer-gap);
 }
 
-.ctds-toggle-row {
-    display: flex;
-}
-
-.ctds-toggle {
-    flex: 1 1 50%;
-    height: var(--control-l);
-    border: 1px solid var(--color-border);
-    font-size: var(--text-m);
-    line-height: 1;
-    cursor: pointer;
-}
-
-.ctds-toggle + .ctds-toggle {
-    margin-left: -1px;
-}
-
-.ctds-toggle.is-active {
-    background: var(--color-text-primary);
-    color: var(--color-bg);
-}
-
-.ctds-circles {
-    display: flex;
-    justify-content: space-between;
-    gap: var(--space-4);
-}
-
-.ctds-circle {
-    flex: 1 1 0;
-    min-width: 0;
-    min-height: var(--control-l);
-    border: 1px solid var(--color-border);
-    border-radius: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 var(--space-2);
-    text-align: center;
-    font-size: var(--text-s);
-    line-height: 1.15;
-    cursor: pointer;
-}
-
-.ctds-circle.is-active {
-    background: var(--color-text-primary);
-    color: var(--color-bg);
+.ctds-controls .mf-segmented.ctds-fill {
+    display: grid;
+    width: 100%;
 }
 
 .ctds-reset {
     display: flex;
     align-items: center;
-    min-height: var(--tap-target);
 }
 
-.ctds-reset-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    min-height: var(--tap-target);
-    cursor: pointer;
-    font-size: var(--text-s);
-    line-height: 1;
-}
-
-.ctds-reset-icon {
-    display: inline-flex;
-    width: var(--icon-size);
-    height: var(--icon-size);
-}
-
-.ctds-reset-icon svg {
-    display: block;
-    width: 100%;
-    height: 100%;
+/* The ghost button has its own side padding; pull it back so the icon lines up with the fields above. The touch area is unchanged. */
+.ctds-reset .mf-button {
+    margin-inline-start: calc(-1 * var(--space-4));
 }
 
 .ctds-announcer {
@@ -317,9 +247,5 @@ button {
     .ctds-field {
         grid-template-columns: minmax(var(--space-16), auto) minmax(0, 1fr);
         column-gap: var(--space-3);
-    }
-
-    .ctds-circles {
-        gap: var(--space-3);
     }
 }
