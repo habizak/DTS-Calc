@@ -4,41 +4,24 @@
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities) source(none);
 
-/* Everything below is the old css/styles.css, moved unchanged. */
-/* Self-hosted latin variable subset of JetBrains Mono, SIL OFL.
-   The file's weight axis is 400–800, and this face exposes that full range.
-   The UI uses 400, 500, and 700. */
-@font-face {
-    font-family: "JetBrains Mono";
-    font-style: normal;
-    font-weight: 400 800;
-    font-display: swap;
-    src: url("/assets/fonts/jetbrains-mono-latin.woff2") format("woff2");
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
+/* Monoform: the one font and the theme variables (generated, do not edit). */
+@import '../.monoform/fonts/fonts.css';
+@import '../.monoform/theme.css';
 
 :root {
+    /* The fixed frame the app is designed in. Layout constants, not spacing. */
     --frame-width: 393px;
     --frame-height: 852px;
-    --page-padding-x: 24px;
-    --page-padding-top: max(16px, env(safe-area-inset-top));
-    --page-padding-bottom: 24px;
-    --section-gap: 16px;
-    --single-bg: #c20707;
-    --text: #ffffff;
-    --border: #ffffff;
-    --muted: rgba(255, 255, 255, 0.72);
-    --dimmed: rgba(255, 255, 255, 0.46);
-    --font-family: "JetBrains Mono", monospace;
-    --header-size: 15px;
-    --single-label-size: 15px;
-    --single-value-size: clamp(36px, 13vw, 54px);
+    --page-padding-x: var(--space-6);
+    --page-padding-top: max(var(--space-4), env(safe-area-inset-top));
+    --page-padding-bottom: var(--space-6);
+    --section-gap: var(--space-4);
+    /* The big numbers are display type: above the 5xl step on purpose. Floor is 5xl. */
+    --single-value-size: clamp(var(--text-5xl), 13vw, 3.375rem);
     --single-value-line: 0.96;
-    --single-field-gap: clamp(18px, 4vh, 30px);
-    --single-control-height: 48px;
-    --single-footer-gap: 18px;
-    --single-circle-size: clamp(84px, 25vw, 102px);
-    --single-reset-height: 22px;
+    --single-field-gap: clamp(var(--space-4), 4vh, var(--space-8));
+    --single-footer-gap: var(--space-4);
+    --icon-size: 1.375rem;
 }
 
 * {
@@ -62,12 +45,11 @@ body {
 body {
     position: fixed;
     inset: 0;
-    background: var(--single-bg);
-    color: var(--text);
-    font-family: var(--font-family);
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+    font-family: var(--font-mono);
     font-feature-settings: "tnum" 1;
     font-variant-numeric: tabular-nums slashed-zero;
-    transition: background-color 160ms ease;
 }
 
 button,
@@ -113,41 +95,41 @@ button {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 26px;
+    min-height: var(--control-xs);
 }
 
 .ctds-header-title {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--space-1);
     white-space: nowrap;
 }
 
 .ctds-header-label {
-    font-size: var(--header-size);
+    font-size: var(--text-s);
     font-weight: 700;
     line-height: 1.4;
     letter-spacing: 0;
 }
 
 .ctds-brand-mark {
-    width: 24px;
-    height: 24px;
+    width: var(--space-6);
+    height: var(--space-6);
     flex-shrink: 0;
     display: block;
 }
 
 .ctds-brand-mark svg {
     display: block;
-    width: 24px;
-    height: 24px;
+    width: var(--space-6);
+    height: var(--space-6);
 }
 
 .ctds-toggle:focus-visible,
 .ctds-circle:focus-visible,
 .ctds-reset-btn:focus-visible {
-    outline: 1px solid rgba(255, 255, 255, 0.96);
-    outline-offset: 2px;
+    outline: 1px solid var(--color-text-primary);
+    outline-offset: var(--space-0-5);
 }
 
 .ctds-single-shell {
@@ -164,24 +146,24 @@ button {
     justify-content: center;
     gap: var(--single-field-gap);
     min-height: 0;
-    padding: 10px 0 12px;
+    padding: var(--space-2) 0 var(--space-3);
 }
 
 .ctds-field {
     display: grid;
-    grid-template-columns: minmax(66px, auto) minmax(0, 1fr);
+    grid-template-columns: minmax(var(--space-16), auto) minmax(0, 1fr);
     align-items: end;
-    column-gap: 12px;
+    column-gap: var(--space-3);
     width: 100%;
 }
 
 .ctds-label {
     justify-self: start;
     align-self: end;
-    font-size: var(--single-label-size);
+    font-size: var(--text-s);
     line-height: 1.15;
-    color: var(--muted);
-    padding-bottom: 8px;
+    color: var(--color-text-secondary);
+    padding-bottom: var(--space-2);
     white-space: nowrap;
 }
 
@@ -190,12 +172,12 @@ button {
     min-width: 0;
     border: 0;
     background: transparent;
-    color: var(--text);
+    color: var(--color-text-primary);
     text-align: right;
     font-size: var(--single-value-size);
     line-height: var(--single-value-line);
-    letter-spacing: -0.07em;
-    caret-color: var(--text);
+    letter-spacing: -0.01em;
+    caret-color: var(--color-text-primary);
 }
 
 .ctds-field--time .ctds-value {
@@ -227,12 +209,12 @@ button {
 
 .ctds-field.is-target .ctds-label,
 .ctds-field.is-target .ctds-value {
-    color: var(--dimmed);
+    color: var(--color-text-disabled);
 }
 
 .ctds-field.is-nontarget .ctds-label,
 .ctds-field.is-nontarget .ctds-value {
-    color: var(--text);
+    color: var(--color-text-primary);
 }
 
 .ctds-controls {
@@ -247,9 +229,9 @@ button {
 
 .ctds-toggle {
     flex: 1 1 50%;
-    height: var(--single-control-height);
-    border: 1px solid var(--border);
-    font-size: 16px;
+    height: var(--control-l);
+    border: 1px solid var(--color-border);
+    font-size: var(--text-m);
     line-height: 1;
     cursor: pointer;
 }
@@ -259,59 +241,63 @@ button {
 }
 
 .ctds-toggle.is-active {
-    background: var(--text);
-    color: var(--single-bg);
+    background: var(--color-text-primary);
+    color: var(--color-bg);
 }
 
 .ctds-circles {
     display: flex;
     justify-content: space-between;
-    gap: 14px;
+    gap: var(--space-4);
 }
 
 .ctds-circle {
     flex: 1 1 0;
     min-width: 0;
-    aspect-ratio: 1 / 1;
-    max-width: var(--single-circle-size);
-    border: 1px solid var(--border);
-    border-radius: 999px;
+    min-height: var(--control-l);
+    border: 1px solid var(--color-border);
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px;
+    padding: 0 var(--space-2);
     text-align: center;
-    font-size: 15px;
+    font-size: var(--text-s);
     line-height: 1.15;
     cursor: pointer;
 }
 
 .ctds-circle.is-active {
-    background: var(--text);
-    color: var(--single-bg);
+    background: var(--color-text-primary);
+    color: var(--color-bg);
 }
 
 .ctds-reset {
     display: flex;
     align-items: center;
-    min-height: var(--single-reset-height);
+    min-height: var(--tap-target);
 }
 
 .ctds-reset-btn {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    min-height: 22px;
+    gap: var(--space-1);
+    min-height: var(--tap-target);
     cursor: pointer;
-    font-size: 14px;
+    font-size: var(--text-s);
     line-height: 1;
 }
 
 .ctds-reset-icon {
-    font-size: 22px;
-    line-height: 22px;
-    height: 22px;
-    overflow: hidden;
+    display: inline-flex;
+    width: var(--icon-size);
+    height: var(--icon-size);
+}
+
+.ctds-reset-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 .ctds-announcer {
@@ -324,34 +310,16 @@ button {
 
 @media (max-width: 420px) {
     :root {
-        --single-value-size: clamp(34px, 12.4vw, 50px);
-        --single-label-size: 14px;
-        --single-field-gap: clamp(17px, 3.8vh, 26px);
+        --single-value-size: clamp(var(--text-5xl), 12.4vw, 3.125rem);
+        --single-field-gap: clamp(var(--space-4), 3.8vh, var(--space-6));
     }
 
     .ctds-field {
-        grid-template-columns: minmax(58px, auto) minmax(0, 1fr);
-        column-gap: 10px;
+        grid-template-columns: minmax(var(--space-16), auto) minmax(0, 1fr);
+        column-gap: var(--space-3);
     }
 
     .ctds-circles {
-        gap: 12px;
-    }
-
-    .ctds-circle {
-        font-size: 14px;
-    }
-}
-
-@supports not (height: 100dvh) {
-    html,
-    body {
-        height: 100%;
-        max-height: none;
-    }
-
-    .ctds-app {
-        height: min(100vh, var(--frame-height));
-        max-height: 100vh;
+        gap: var(--space-3);
     }
 }
