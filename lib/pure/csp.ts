@@ -1,16 +1,10 @@
-import { createHash } from 'node:crypto'
-import { THEME_BOOT_SCRIPT } from './themeBootScript'
-
 /** Header the proxy uses to hand the per-request nonce to the render. */
 export const NONCE_HEADER = 'x-nonce'
-
-/** CSP source (no quotes) for the fixed theme boot script. */
-export const THEME_BOOT_SCRIPT_HASH = `sha256-${createHash('sha256').update(THEME_BOOT_SCRIPT).digest('base64')}`
 
 export function buildCspHeader(nonce: string, isDev: boolean): string {
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' '${THEME_BOOT_SCRIPT_HASH}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''}`,
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self'",
     "connect-src 'self'",

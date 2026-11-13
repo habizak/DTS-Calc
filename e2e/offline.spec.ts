@@ -1,30 +1,85 @@
-import { expect, test } from '@playwright/test'
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { expect, test, type Page } from '@playwright/test'
+import { LINK_PREVIEW } from '../lib/pure/linkPreview'
 
-test('the demo count survives a reload', async ({ page }) => {
+const COVER_SHA256 = '728775ceb03974599c3acd8b27f01c604eb5f6812f1ac7bf2e57c323ffbb6554'
+
+async function enter(page: Page, id: string, value: string) {
+  await page.locator(id).fill(value)
+  await page.locator(id).blur()
+}
+
+async function tenKmInFifty(page: Page) {
+  await enter(page, '#distanceInput', '10')
+  await enter(page, '#speedInput', '12')
+  await expect(page.locator('#timeInput')).toHaveValue('00:50:00')
+  await expect(page.locator('#speedInput')).toHaveValue('12.00')
+  await expect(page.locator('#paceInput')).toHaveValue('05:00')
+}
+
+async function controlled(page: Page) {
+  await expect
+    .poll(
+      () =>
+        page.evaluate(async () => {
+          const reg = await navigator.serviceWorker.getRegistration('/sw.js')
+          return Boolean(reg?.active && navigator.serviceWorker.controller)
+        }),
+      { timeout: 20_000 },
+    )
+    .toBe(true)
+}
+
+test('10 km in 50 minutes gives 12 km/h and 5:00 min/km', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: 'Add one' }).click()
-  await expect(page.getByTestId('count')).toHaveText('1')
-  await page.reload()
-  await expect(page.getByTestId('count')).toHaveText('1')
+  await tenKmInFifty(page)
 })
 
-test('the app loads from the service worker with the network off', async ({ page, context }) => {
+test('saved values survive a reload', async ({ page }) => {
   await page.goto('/')
-  await expect
-    .poll(() => page.evaluate(async () => {
-      const reg = await navigator.serviceWorker.getRegistration('/sw.js')
-      return Boolean(reg?.active && navigator.serviceWorker.controller)
-    }), { timeout: 20_000 })
-    .toBe(true)
+  await tenKmInFifty(page)
+  await page.reload()
+  await expect(page.locator('#timeInput')).toHaveValue('00:50:00')
+  await expect(page.locator('#distanceInput')).toHaveValue('10.00')
+  const saved = await page.evaluate(() => localStorage.getItem('pace-calculator-state'))
+  expect(saved).toBe(
+    '{"target":"TIME","unitSystem":"METRIC","values":{"time":"00:50:00","distance":"10.00","speed":"12.00","pace":"05:00"}}',
+  )
+})
+
+test('the app loads from the service worker with the network off and still calculates', async ({ page, context }) => {
+  await page.goto('/')
+  await controlled(page)
   await context.setOffline(true)
   await page.reload()
-  await expect(page.getByRole('button', { name: 'Add one' })).toBeVisible()
-  await page.getByRole('button', { name: 'Add one' }).click()
-  await expect(page.getByTestId('count')).not.toHaveText('0')
+  await expect(page.locator('.ctds-header-label')).toHaveText('DTS-Calc')
+  await tenKmInFifty(page)
 })
 
-test('the theme boot script follows the saved choice', async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('starter_theme', 'dark'))
+test('the page head carries the approved link-preview tags', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('html')).toHaveClass(/theme-dark/)
+  const meta = (attr: 'name' | 'property', key: string) =>
+    page.locator(`meta[${attr}="${key}"]`).getAttribute('content')
+  expect(await page.title()).toBe('DTS-Calc')
+  expect(await meta('name', 'description')).toBe(LINK_PREVIEW.description)
+  expect(await meta('property', 'og:title')).toBe(LINK_PREVIEW.title)
+  expect(await meta('property', 'og:url')).toBe(LINK_PREVIEW.url)
+  expect(await meta('property', 'og:site_name')).toBe(LINK_PREVIEW.siteName)
+  expect(await meta('property', 'og:image')).toBe(LINK_PREVIEW.image)
+  expect(await meta('property', 'og:image:alt')).toBe(LINK_PREVIEW.imageAlt)
+  expect(await meta('name', 'twitter:card')).toBe('summary_large_image')
+  expect(await meta('name', 'twitter:image')).toBe(LINK_PREVIEW.image)
+  expect(await meta('name', 'theme-color')).toBe('#c20707')
+  expect(await meta('name', 'apple-mobile-web-app-title')).toBe('DTS-Calc')
+})
+
+test('og.png is the approved cover, served at /og.png and kept out of the offline shell', async ({ request }) => {
+  const response = await request.get('/og.png')
+  expect(response.status()).toBe(200)
+  const body = await response.body()
+  expect(body.length).toBe(3767)
+  expect(createHash('sha256').update(body).digest('hex')).toBe(COVER_SHA256)
+  const precache = JSON.parse(readFileSync('public/sw-precache.json', 'utf8')) as string[]
+  expect(precache.includes('/og.png')).toBe(false)
 })

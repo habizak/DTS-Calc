@@ -1,5 +1,5 @@
-import Demo from '../components/Demo'
+import PaceCalculator from '../components/PaceCalculator'
 
 export default function Page() {
-  return <Demo />
+  return <PaceCalculator />
 }
