@@ -1,11 +1,6 @@
 {
-  "framework": null,
+  "framework": "nextjs",
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "rewrites": [
-    { "source": "/b/:hash/:path*", "destination": "/:path*" },
-    { "source": "/", "destination": "/index.html" }
-  ],
   "headers": [
     {
       "source": "/sw.js",

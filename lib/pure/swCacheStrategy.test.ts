@@ -4,6 +4,7 @@ import {
   classifySwRequest,
   isFlightRequest,
   isHashedNextStatic,
+  isLegacyDtsCalcCache,
   isShellStaticAsset,
   shouldBypassSwCache,
 } from './swCacheStrategy'
@@ -79,5 +80,22 @@ describe('swCacheStrategy (APP-77)', () => {
       shouldBypassSwCache({ url: 'http://localhost/about?edit=note-1', mode: 'navigate' })
     ).toBe(false)
     expect(shouldBypassSwCache({ url: 'http://localhost/about', mode: 'navigate' })).toBe(false)
+  })
+
+  it('recognises the old plain-JS worker caches and never this worker\'s own', () => {
+    expect(isLegacyDtsCalcCache('dts-calc-meta')).toBe(true)
+    expect(isLegacyDtsCalcCache('dts-calc-7c8471c210d74406b7bd')).toBe(true)
+    for (const own of [
+      'dts-calc-v8-85f8cdf9c3278869',
+      'dts-calc-v8-85f8cdf9c3278869-staging',
+      'dts-calc-install-backoff',
+      'dts-calc-clients',
+      'dts-calc-7c8471c210d74406b7b', // 19 characters
+      'dts-calc-7c8471c210d74406b7bdd', // 21 characters
+      'dts-calc-7C8471C210D74406B7BD', // not lower-case hex
+      'other-7c8471c210d74406b7bd',
+    ]) {
+      expect(isLegacyDtsCalcCache(own), own).toBe(false)
+    }
   })
 })

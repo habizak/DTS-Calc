@@ -348,6 +348,29 @@ function isRetiredVersionCache(name) {
   return isVersionCache(name) && name !== LIVE_CACHE
 }
 
+/**
+ * Caches from the plain-JS worker this one replaced (keep in sync with isLegacyDtsCalcCache in
+ * lib/pure/swCacheStrategy.ts): `dts-calc-meta` and `dts-calc-<20 hex>`. The 20 hex characters
+ * never match this worker's own names (`dts-calc-v8-...`, `dts-calc-clients`, `dts-calc-install-backoff`).
+ */
+function isLegacyCache(name) {
+  return name === 'dts-calc-meta' || /^dts-calc-[0-9a-f]{20}$/.test(name)
+}
+
+/**
+ * Delete the old worker's caches, but only once the live cache of this build holds the full
+ * shell. Until then they stay, so a failed or partial install can never leave a device with no
+ * offline shell. Safe to run again: it does nothing when there is nothing left to delete.
+ */
+async function deleteLegacyCaches() {
+  const names = await caches.keys()
+  const legacy = names.filter((name) => isLegacyCache(name))
+  if (legacy.length === 0) return
+  if (names.indexOf(LIVE_CACHE) === -1) return
+  if (!(await liveHasPrecache(await caches.open(LIVE_CACHE), null))) return
+  await Promise.all(legacy.map((name) => caches.delete(name)))
+}
+
 function isStaticAssetRequest(req) {
   const raw = typeof req === 'string' ? req : req.url
   try {
@@ -670,6 +693,11 @@ async function startupMaintenance() {
   await deleteForeignStaging()
   await deleteStaleBackoff()
   if (!thisWorkerIsActive()) return
+  try {
+    await deleteLegacyCaches()
+  } catch {
+    /* Retried the next time the worker starts. */
+  }
   const names = await caches.keys()
   if (names.indexOf(STAGING_CACHE) === -1) return
   const promoted = await promoteStaging()
@@ -853,6 +881,11 @@ self.addEventListener('activate', (event) => {
       /* claim is missing on very old browsers; old-client tracking still applies. */
     }
     if (promoted) await purgeRetiredCaches()
+    try {
+      await deleteLegacyCaches()
+    } catch {
+      /* Retried the next time the worker starts. */
+    }
   })())
 })
 

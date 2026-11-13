@@ -82,6 +82,14 @@ export const SW_SHELL_ASSETS = [
   '/manifest.json',
 ] as const
 
+/**
+ * Cache names left by the plain-JS DTS-Calc worker that /sw.js replaced: `dts-calc-meta` and
+ * `dts-calc-<20 hex>`. Mirrored in public/sw.js. It must never match this worker's own names.
+ */
+export function isLegacyDtsCalcCache(name: string): boolean {
+  return name === 'dts-calc-meta' || /^dts-calc-[0-9a-f]{20}$/.test(name)
+}
+
 /** Immutable hashed build output — safe to cache-first. */
 export function isHashedNextStatic(pathname: string): boolean {
   return pathname.startsWith('/_next/static/')
