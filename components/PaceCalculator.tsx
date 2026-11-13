@@ -46,7 +46,8 @@ function writeSaved(state: CalculatorState): void {
 }
 
 /** The one screen. Markup and class names match the old index.html; the rules live in lib/pure. */
-export default function PaceCalculator() {
+/** `resetIcon` is the inner markup of .monoform/icons/svg/reset.svg, read on the server by app/page.tsx. */
+export default function PaceCalculator({ resetIcon }: { resetIcon: string }) {
   const [state, setState] = useState<CalculatorState>(initialState)
   const [ann, setAnn] = useState('')
   const stateRef = useRef(state)
@@ -277,7 +278,12 @@ export default function PaceCalculator() {
                 onMouseLeave={cancelPress}
               >
                 <span className="ctds-reset-icon" aria-hidden="true">
-                  ↺
+                  <svg
+                    viewBox="0 0 11 11"
+                    fill="currentColor"
+                    shapeRendering="crispEdges"
+                    dangerouslySetInnerHTML={{ __html: resetIcon }}
+                  />
                 </span>
                 <span className="ctds-reset-text">Reset</span>
               </button>
