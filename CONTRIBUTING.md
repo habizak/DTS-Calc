@@ -8,4 +8,4 @@ npx playwright install --with-deps chromium webkit
 npm test
 ```
 
-For calculation changes, check 10 km in 50 minutes gives 12 km/h and 5:00 min/km; exercise both unit systems and invalid inputs. For GPX or multi-pace changes, check that `test.gpx` is rejected as over 45 km, then upload a valid 5–45 km route, assign paces to multiple zones, and verify segment and total times. For layout or storage changes, reload and test on a narrow mobile viewport, including keyboard, reset, and both modes. These browser and device checks are manual and are not replaced by the unit suite.
+For calculation changes, check 10 km in 50 minutes gives 12 km/h and 5:00 min/km; exercise both unit systems and invalid inputs. For layout or storage changes, reload and test on a narrow mobile viewport, including keyboard, and reset. These browser and device checks are manual and are not replaced by the unit suite.
