@@ -1,0 +1,92 @@
+/* Monoform stepped motion. Spec: agent/rules.md section 6b. Every animation is a sequence of hard jumps, never a curve.
+   Stepped In (appear), Stepped Out (permanent or large things leave) and Terminal Pop (small, transient things are dismissed).
+   Only transform, opacity and visibility are animated. Layout and hit areas are always at their final size.
+   Durations come from --motion-s (130ms) and --motion-l (220ms). The sequence times (text at 200ms, actions at 220 and 280ms)
+   are absolute and the same everywhere. */
+.mf-stepped {
+  --mf-stepped-dur: var(--motion-s);
+  --mf-stepped-origin: 50% 50%;
+  --mf-stepped-pe: 0.18;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.mf-stepped--l { --mf-stepped-dur: var(--motion-l); }
+.mf-stepped--center { --mf-stepped-origin: 50% 50%; }
+.mf-stepped--top { --mf-stepped-origin: 50% 0; }
+.mf-stepped--bottom { --mf-stepped-origin: 50% 100%; }
+.mf-stepped--left { --mf-stepped-origin: 0 50%; }
+.mf-stepped--right { --mf-stepped-origin: 100% 50%; }
+
+/* The background layer is the thing that grows. The content sits above it at its final size. */
+.mf-stepped__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--color-surface);
+  outline: 1px solid var(--color-border);
+  transform-origin: var(--mf-stepped-origin);
+}
+.mf-stepped__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+/* Closed: nothing left on screen, no stub. */
+.mf-stepped[data-state='closed'] { visibility: hidden; }
+
+/* Stepped In: the layer grows in five hard jumps, then the text appears in one step at 200ms, then each action pops in. */
+.mf-stepped[data-state='in'] .mf-stepped__bg {
+  outline-color: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
+  animation: mf-stepped-in var(--mf-stepped-dur) steps(1, end) backwards;
+}
+.mf-stepped[data-state='in'] .mf-stepped__content { animation: mf-stepped-show 40ms step-end 200ms backwards; }
+.mf-stepped[data-state='in'] .mf-stepped__action--1 { animation: mf-stepped-pop 40ms steps(2, end) 220ms backwards; }
+.mf-stepped[data-state='in'] .mf-stepped__action--2 { animation: mf-stepped-pop 40ms steps(2, end) 280ms backwards; }
+
+/* Stepped Out: Stepped In played backwards. Text and actions hide at once, then the layer shrinks and the last frame is hidden. */
+.mf-stepped[data-state='out'] .mf-stepped__bg {
+  outline-color: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
+  animation: mf-stepped-out var(--mf-stepped-dur) steps(1, end) both;
+}
+.mf-stepped[data-state='out'] .mf-stepped__content,
+.mf-stepped[data-state='pop'] .mf-stepped__content { visibility: hidden; }
+
+/* Terminal Pop: swell in two steps (40ms), hold one bigger frame (65ms), then gone. 105ms in all. */
+.mf-stepped[data-state='pop'] .mf-stepped__bg { animation: mf-stepped-popout 105ms steps(1, end) forwards; }
+
+@keyframes mf-stepped-in {
+  0% { transform: scale(0.02, 0.06); }
+  24% { transform: scale(0.28, 0.25); }
+  48% { transform: scale(0.55, 0.5); }
+  72% { transform: scale(0.82, 0.78); }
+  100% { transform: none; }
+}
+@keyframes mf-stepped-out {
+  0% { transform: none; }
+  24% { transform: scale(0.82, 0.78); }
+  48% { transform: scale(0.55, 0.5); }
+  72% { transform: scale(0.28, 0.25); }
+  100% { transform: scale(0.02, 0.06); opacity: 0; visibility: hidden; }
+}
+@keyframes mf-stepped-show { from { visibility: hidden; } to { visibility: visible; } }
+@keyframes mf-stepped-pop { from { transform: scale(0.5); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes mf-stepped-popout {
+  0% { transform: scale(calc(1 + var(--mf-stepped-pe) * 0.22)); }
+  19% { transform: scale(calc(1 + var(--mf-stepped-pe) * 0.44)); }
+  38% { transform: scale(calc(1 + var(--mf-stepped-pe))); }
+  99.9% { transform: scale(calc(1 + var(--mf-stepped-pe))); opacity: 1; }
+  100% { transform: scale(calc(1 + var(--mf-stepped-pe))); opacity: 0; visibility: hidden; }
+}
+
+/* Reduced motion: everything off, straight to the resting state. */
+@media (prefers-reduced-motion: reduce) {
+  .mf-stepped .mf-stepped__bg,
+  .mf-stepped .mf-stepped__content,
+  .mf-stepped .mf-stepped__action { animation: none !important; }
+}

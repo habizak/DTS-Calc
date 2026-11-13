@@ -80,7 +80,8 @@ A button is **style × size × content**. Pick one of each.
 - **Size** = control height: `xs` 1.5rem · `s` 2rem · **`m` 2.5rem (default)** · `l` 3rem. Min tap target 2.75rem, always: extend with padding, the caption, or a centred `::after` at `max(100%, 2.75rem)` (needs `position: relative`). Small controls placed side by side may have overlapping hit areas; keep gaps ≥ 0.5rem.
   - Label type: `xs`/`s` → type `s`, weight 700 · `m` → type `m`, weight 500 · `l` → type `l`, weight 500. Never 600.
   - Horizontal padding: `xs` 0.5rem · `s` 0.75rem · `m` 1rem · `l` 1.5rem. Gap between icon and label: `2` (0.5rem).
-  - Icon size: 12px at `xs`/`s`, 24px at `m`/`l` (whole multiples of the pixel grid).
+  - Icon size: 11px at `xs`/`s`, 22px at `m`/`l` (whole multiples of the 11px pixel grid)
+  - In code: `Button` and `IconButton` from `@monoform/ui` (`.monoform/ui/`). Do not write your own button.
 - **Shape comes from what is inside the button.** Style does not change it.
   | Inside the button | Shape |
   |---|---|
@@ -107,6 +108,7 @@ Pick exactly one of 2–5 options, all visible, effect immediate. Not for on/off
 - **Motion:** none. The selection snaps; no sliding highlight
 - **Build:** native radio inputs sharing one `name`, each inside a `<label>`, in a wrapper with `role="radiogroup"` and an accessible name (a visible label or `aria-label`). One tab stop, arrow keys move and select. Never `aria-pressed` buttons for this
 - Switching a whole screen or panel is tabs, not this component
+- In code: `Segmented` from `@monoform/ui` (`.monoform/ui/`), controlled (`value`, `onChange`), 2 to 5 options, `aria-label` or `aria-labelledby` required by the types. Do not write your own.
 
 ---
 
@@ -157,6 +159,7 @@ Pick exactly one of 2–5 options, all visible, effect immediate. Not for on/off
 - Colour is the text role of the context (`text-primary`, `text-secondary`, `text-disabled`; `on-accent` on accent fills). Icons never take their own colour
 - An icon never stands alone: icon-only buttons need `aria-label`; the SVG is `aria-hidden`. Hit area stays 2.75rem regardless of icon size
 - Logos and brand marks are not icons: they sit outside the grid and keep their own file
+- In code: `Icon` from `@monoform/ui` (`<Icon name="plus" size={22} />`, sizes 11, 22, 33). It draws the path from `.monoform/ui/icons.ts`, so there is no file to serve and nothing to copy
 - Meaning is fixed: one function → one icon (`plus` adds, `x` closes, `trash` deletes, `check` confirms). Do not reuse an icon for another function
 
 ---
@@ -193,6 +196,7 @@ Stepped In and Out take two variables:
 **Terminal Pop** — how things are dismissed or deleted. Swell in two steps (40ms), hold one bigger frame (65ms), then gone: 105ms total. Use it for **small and transient** things: modal, note, message bar, toast, cell. The growth is `min(0.18, 0.5rem ÷ longest side)`: a cell swells to 1.18, a 15rem modal grows about 0.5rem in total. Clearing many items cascades them over a random 0–120ms.
 
 - **Speed follows size:** `l` = 220ms for surfaces spanning the full width or height of the screen (command bar, Focus mode, bead ring); `s` = 130ms for everything else (cells, buttons, dialogs, panels, bars, rows)
+- **In code:** `Stepped` and `SteppedAction` from `@monoform/ui` (props: `open`, `speed`, `direction`, `exit` = `out` or `pop`). Use them instead of writing keyframes
 - **Entrances play, exits depend on the thing:** permanent or large → Stepped Out, small or transient → Terminal Pop
 - **Beads (ZKR-Countr):** 9° per count, stepped over `l` with `steps(3, end)`. No smooth rotation
 - **No easing keywords.** `ease`, `ease-in`, `ease-out`, `ease-in-out` are banned. Hover, press and colour changes have no transition
