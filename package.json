@@ -1,6 +1,6 @@
 {
   "name": "dts-calc",
-  "description": "DTS-Calc: distance, time and speed calculator for runners. Next 16, React 18, offline-first.",
+  "description": "DTS-Calc: distance, time and speed calculator for runners. Next 16, React 19, offline-first.",
   "private": true,
   "type": "module",
   "engines": {
