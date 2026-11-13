@@ -27,5 +27,6 @@ Layering: `lib/pure/*` has no side effects and holds all calculator rules; the s
 
 - `.monoform/` is generated. Do not edit it by hand: change the design system repo and merge the sync PR it opens
 - `.monoform/baseline.json` is this app's list of known rule breaks. It may only shrink. Check with `node <design-system>/tools/check scan . --name dts-calc`
+- `.monoform/size-budget.json` is this app's first-load JavaScript budget (gzip KB). Check with `node .monoform/tools/size.mjs .` after a build. Raise it only on purpose, in a PR, with a reason
 - Sync PRs never touch `.github/workflows/**`
 <!-- monoform:end -->

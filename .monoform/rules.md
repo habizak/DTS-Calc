@@ -90,7 +90,9 @@ A button is **style × size × content**. Pick one of each.
   | Icon only | Circle (radius 9999), 1:1 at the control height |
   | Icon + caption (icon is the main thing) | Circle holding **only the icon**; the caption sits outside, below or beside, linked with `<label for>` so it is part of the tap target |
   - If the button box contains text, it is a rectangle. No exceptions.
-- **Icon-only is allowed only for universal icons:** close, check, plus, minus, back/forward arrow, delete, copy, maximize/minimize, arrow-down, and enter (submit) **only when it is the submit button attached to an input**. Every other icon needs a label or a caption. Every icon-only button needs an accessible name (`aria-label`) regardless.
+- **Icon-only is allowed only for these icons.** Universal: close, check, plus, minus, back/forward arrow, delete, copy, maximize/minimize, arrow-down, and enter (submit) **only when it is the submit button attached to an input**. App controls (decision of 13 Nov 2026): `undo`, `edit`, `sound` / `muted` (one sound on/off toggle), `sun` / `moon` (one theme toggle) and `playlist`. Every other icon needs a label or a caption. No captions are needed for the listed ones.
+  - **A toggle's icon changes with its state** (`sound` when sound is on and `muted` when off; `moon` and `sun` for the theme) and its `aria-label` changes with it. One button, never two side by side
+  - **Every icon-only button keeps its `aria-label` and a hit area of at least 2.75rem**, whatever the listed icon
 - **Border** 1px. **Disabled:** opacity 0.4, no pointer cursor. **Focus:** `outline: 1px solid` accent, offset 0.125rem (`0.5` spacing × 1). No shadow, no gradient.
 - Accessibility: native `<button>`; `aria-label` on icon-only; caption linked with `<label for>`; disabled uses the `disabled` attribute.
 - Labels: verb-first → `Create Note` not `Note Creation`. Press and enter animation belong to the motion section.

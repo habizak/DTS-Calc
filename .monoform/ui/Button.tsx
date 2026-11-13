@@ -20,7 +20,7 @@ export interface ButtonProps extends NativeProps {
 export interface IconButtonProps extends NativeProps {
   variant?: ButtonVariant
   size?: ButtonSize
-  /** The icon, an svg element from the Monoform set. Icon-only buttons are for universal icons (close, check, plus, minus, back, delete, copy). */
+  /** The icon, an svg element from the Monoform set. Icon-only buttons are for the icons the rules list: the universal ones (close, check, plus, minus, back, delete, copy) plus undo, edit, sound / muted, sun / moon and playlist. A toggle swaps the icon and the aria-label with its state. */
   icon: ReactNode
   /** Required: an icon alone has no name. */
   'aria-label': string

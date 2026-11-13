@@ -1,0 +1,5 @@
+{
+  "firstLoadGzipKB": 165,
+  "route": "/",
+  "note": "About 10% above the size when this was set. Raise it only on purpose, in a PR, with a reason."
+}
