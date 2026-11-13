@@ -82,6 +82,16 @@ describe('swCacheStrategy (APP-77)', () => {
     expect(shouldBypassSwCache({ url: 'http://localhost/about', mode: 'navigate' })).toBe(false)
   })
 
+  it('treats everything under /assets/ and the manifest as shell files, and nothing else', () => {
+    for (const path of ['/assets/x.svg', '/assets/fonts/y.woff2', '/manifest.json']) {
+      expect(isShellStaticAsset(path), path).toBe(true)
+      expect(classifySwRequest(path, false), path).toBe('stale-while-revalidate')
+    }
+    for (const path of ['/assetsx/y', '/other/assets/y', '/api/x', '/sw.js']) {
+      expect(isShellStaticAsset(path), path).toBe(false)
+    }
+  })
+
   it('recognises the old plain-JS worker caches and never this worker\'s own', () => {
     expect(isLegacyDtsCalcCache('dts-calc-meta')).toBe(true)
     expect(isLegacyDtsCalcCache('dts-calc-7c8471c210d74406b7bd')).toBe(true)

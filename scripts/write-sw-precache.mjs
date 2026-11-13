@@ -101,8 +101,33 @@ const urls = collectPrecacheUrls({
   staticFiles,
 })
 
+/** Every file under public/assets, as /assets/... URLs. The worker precaches them with the build files. */
+async function publicAssetUrls(dir, prefix = '/assets') {
+  const found = []
+  let entries = []
+  try {
+    entries = await readdir(dir, { withFileTypes: true })
+  } catch {
+    return found
+  }
+  for (const entry of entries.sort((x, y) => x.name.localeCompare(y.name))) {
+    if (entry.isDirectory()) found.push(...(await publicAssetUrls(path.join(dir, entry.name), `${prefix}/${entry.name}`)))
+    else if (!entry.name.endsWith('.txt') && !entry.name.startsWith('.')) found.push(`${prefix}/${entry.name}`)
+  }
+  return found
+}
+urls.push(...(await publicAssetUrls(path.join(ROOT, 'public', 'assets'))))
+
 const bytesByUrl = {}
 for (const url of urls) {
+  if (url.startsWith('/assets/')) {
+    try {
+      bytesByUrl[url] = (await stat(path.join(ROOT, 'public', url))).size
+    } catch {
+      bytesByUrl[url] = 0
+    }
+    continue
+  }
   if (!url.startsWith('/_next/')) continue
   try {
     const info = await stat(path.join(NEXT, url.slice('/_next/'.length)))

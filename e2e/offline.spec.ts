@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { type Dirent, readFileSync, readdirSync } from 'node:fs'
+import path from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
 import { LINK_PREVIEW } from '../lib/pure/linkPreview'
 
@@ -83,6 +84,34 @@ test('the app loads from the service worker with the network off and still calcu
   await page.reload()
   await expect(page.locator('.ctds-header-label')).toHaveText('DTS-Calc')
   await tenKmInFifty(page)
+})
+
+test('offline, every file under /assets still loads, and the font is the real one', async ({ page, context }) => {
+  await page.goto('/')
+  await controlled(page)
+  await context.setOffline(true)
+  await page.reload()
+  await expect(page.locator('.ctds-header-label')).toHaveText('DTS-Calc')
+  // The list comes from the files on disk, not from the worker's own list, so a file the worker forgets fails here.
+  const assets = (readdirSync('public/assets', { recursive: true, withFileTypes: true }) as Dirent[])
+    .filter((entry) => entry.isFile() && !entry.name.endsWith('.txt'))
+    .map((entry) => `/assets/${path.relative('public/assets', path.join(entry.parentPath, entry.name)).split(path.sep).join('/')}`)
+  expect(assets.length).toBeGreaterThan(5)
+  const failed = await page.evaluate(async (urls) => {
+    const bad: string[] = []
+    for (const url of urls) {
+      try {
+        const response = await fetch(url)
+        if (!response.ok) bad.push(url)
+      } catch {
+        bad.push(url)
+      }
+    }
+    return bad
+  }, assets)
+  expect(failed).toEqual([])
+  const faces = await page.evaluate(() => document.fonts.load('400 16px "JetBrains Mono"').then((list) => list.length))
+  expect(faces).toBeGreaterThan(0)
 })
 
 test('the page head carries the approved link-preview tags', async ({ page }) => {
