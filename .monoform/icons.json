@@ -1,0 +1,129 @@
+{
+  "grid": 11,
+  "live": {
+    "glyph": 7,
+    "object": 9
+  },
+  "icons": {
+    "alert": {
+      "class": "object",
+      "function": "Warning / caution"
+    },
+    "arrow-down": {
+      "class": "glyph",
+      "function": "Down / scroll to bottom"
+    },
+    "arrow-left": {
+      "class": "glyph",
+      "function": "Back / previous"
+    },
+    "arrow-up": {
+      "class": "glyph",
+      "function": "Up / scroll to top"
+    },
+    "blend": {
+      "class": "object",
+      "function": "Opacity / transparency"
+    },
+    "check": {
+      "class": "glyph",
+      "function": "Confirm / save / done / copied"
+    },
+    "chevron-down": {
+      "class": "object",
+      "function": "Expand / open menu"
+    },
+    "copy": {
+      "class": "object",
+      "function": "Copy to clipboard"
+    },
+    "corner-down-left": {
+      "class": "glyph",
+      "function": "Execute / submit / enter"
+    },
+    "download": {
+      "class": "object",
+      "function": "Download / export a file"
+    },
+    "drag": {
+      "class": "glyph",
+      "function": "Drag handle / reorder"
+    },
+    "edit": {
+      "class": "object",
+      "function": "Edit / rename"
+    },
+    "eye": {
+      "class": "object",
+      "function": "Show / hide preview"
+    },
+    "grid": {
+      "class": "object",
+      "function": "Grid size / grid overlay"
+    },
+    "link": {
+      "class": "object",
+      "function": "Link / lock aspect ratio"
+    },
+    "maximize": {
+      "class": "object",
+      "function": "Expand / enter focus mode"
+    },
+    "minimize": {
+      "class": "object",
+      "function": "Collapse / leave focus mode"
+    },
+    "minus": {
+      "class": "glyph",
+      "function": "Remove / decrease"
+    },
+    "moon": {
+      "class": "object",
+      "function": "Dark theme"
+    },
+    "muted": {
+      "class": "object",
+      "function": "Sound off"
+    },
+    "playlist": {
+      "class": "object",
+      "function": "Playlist / list of tracks"
+    },
+    "plus": {
+      "class": "glyph",
+      "function": "Add / new / increase"
+    },
+    "redo": {
+      "class": "object",
+      "function": "Redo"
+    },
+    "reset": {
+      "class": "object",
+      "function": "Reset / start over"
+    },
+    "sound": {
+      "class": "object",
+      "function": "Sound on"
+    },
+    "sun": {
+      "class": "object",
+      "function": "Light theme"
+    },
+    "trash": {
+      "class": "object",
+      "function": "Delete / clear"
+    },
+    "undo": {
+      "class": "object",
+      "function": "Undo"
+    },
+    "upload": {
+      "class": "object",
+      "function": "Upload / import a file"
+    },
+    "x": {
+      "class": "glyph",
+      "function": "Close / dismiss / clear"
+    }
+  }
+}
