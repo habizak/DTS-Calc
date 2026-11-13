@@ -1,0 +1,82 @@
+/* Monoform Segmented control. Spec: agent/rules.md "Segmented control". Pick exactly one of 2 to 5 text options,
+   all visible, effect immediate. Native radio inputs sharing one name. Selected is a text-primary fill with a bg label,
+   so it works with no accent. Only Monoform variables are used here. */
+.mf-segmented {
+  --mf-segmented-h: var(--control-m);
+  --mf-segmented-px: var(--space-4);
+  --mf-segmented-text: var(--text-m);
+  --mf-segmented-weight: 500;
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  box-sizing: border-box;
+  border: 1px solid var(--color-text-primary);
+  border-radius: 0;
+  font-family: var(--font-mono);
+}
+.mf-segmented--xs { --mf-segmented-h: var(--control-xs); --mf-segmented-px: var(--space-2); --mf-segmented-text: var(--text-s); --mf-segmented-weight: 700; }
+.mf-segmented--s { --mf-segmented-h: var(--control-s); --mf-segmented-px: var(--space-3); --mf-segmented-text: var(--text-s); --mf-segmented-weight: 700; }
+.mf-segmented--m { --mf-segmented-h: var(--control-m); --mf-segmented-px: var(--space-4); --mf-segmented-text: var(--text-m); --mf-segmented-weight: 500; }
+.mf-segmented--l { --mf-segmented-h: var(--control-l); --mf-segmented-px: var(--space-6); --mf-segmented-text: var(--text-l); --mf-segmented-weight: 500; }
+
+.mf-segmented__segment {
+  position: relative;
+  display: flex;
+  min-width: var(--tap-target);
+  cursor: pointer;
+}
+.mf-segmented__segment + .mf-segmented__segment { border-left: 1px solid var(--color-text-primary); }
+
+/* The touch area is at least --tap-target tall, extended vertically from the visible segment. */
+.mf-segmented__segment::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: max(100%, var(--tap-target));
+  transform: translateY(-50%);
+}
+
+/* The radio sits invisibly over the whole segment: one tab stop, arrow keys move and select natively. */
+.mf-segmented__input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.mf-segmented__text {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  /* The group is the control height, border included. */
+  min-height: calc(var(--mf-segmented-h) - 2px);
+  padding: 0 var(--mf-segmented-px);
+  font-size: var(--mf-segmented-text);
+  font-weight: var(--mf-segmented-weight);
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--color-text-primary);
+  background: transparent;
+}
+/* Same weight in both states so nothing shifts. The selection snaps: no motion. */
+.mf-segmented__input:checked + .mf-segmented__text {
+  background: var(--color-text-primary);
+  color: var(--color-bg);
+}
+/* The focus ring is drawn inside the segment, so it shows on both selected and unselected segments. */
+.mf-segmented__input:focus-visible + .mf-segmented__text {
+  outline: 1px solid currentColor;
+  outline-offset: -0.25rem;
+}
+
+.mf-segmented--disabled { opacity: 0.4; }
+.mf-segmented--disabled .mf-segmented__segment,
+.mf-segmented--disabled .mf-segmented__input { cursor: default; }
