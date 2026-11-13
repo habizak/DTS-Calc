@@ -220,6 +220,11 @@ button {
     width: 100%;
 }
 
+/* The three targets use the small label size so "Distance" fits on a 360px phone, but keep the large control height (3rem, a Monoform step) they always had. */
+.ctds-controls .mf-segmented.ctds-targets {
+    --mf-segmented-h: var(--control-l);
+}
+
 .ctds-reset {
     display: flex;
     align-items: center;

@@ -249,7 +249,7 @@ export default function PaceCalculator() {
             <Segmented
               aria-label="Solve for"
               size="s"
-              className="ctds-fill"
+              className="ctds-fill ctds-targets"
               options={TARGET_OPTIONS}
               value={view.activeTarget ?? null}
               onChange={(target) => apply({ type: 'setTarget', target })}
