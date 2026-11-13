@@ -1,5 +1,6 @@
 'use client'
 
+import { Button, Icon, Segmented } from '@monoform/ui'
 import { type ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { useViewportLock } from '../hooks/useViewportLock'
 import {
@@ -15,6 +16,17 @@ import {
   reduce,
   serializeState,
 } from '../lib/pure/calculator'
+
+const UNIT_OPTIONS = [
+  { value: 'METRIC', label: 'Metric' },
+  { value: 'IMPERIAL', label: 'Imperial' },
+] as const
+
+const TARGET_OPTIONS = [
+  { value: 'TIME', label: 'Time' },
+  { value: 'DISTANCE', label: 'Distance' },
+  { value: 'SPEED', label: 'Speed' },
+] as const
 
 const DEBOUNCE_MS = 200
 const LONG_PRESS_MS = 500
@@ -46,8 +58,7 @@ function writeSaved(state: CalculatorState): void {
 }
 
 /** The one screen. Markup and class names match the old index.html; the rules live in lib/pure. */
-/** `resetIcon` is the inner markup of .monoform/icons/svg/reset.svg, read on the server by app/page.tsx. */
-export default function PaceCalculator({ resetIcon }: { resetIcon: string }) {
+export default function PaceCalculator() {
   const [state, setState] = useState<CalculatorState>(initialState)
   const [ann, setAnn] = useState('')
   const stateRef = useRef(state)
@@ -123,21 +134,6 @@ export default function PaceCalculator({ resetIcon }: { resetIcon: string }) {
   const view = deriveView(state)
   const fieldClass = (field: Field, name: string) =>
     `ctds-field ctds-field--${name} ${view.fields[field].isTarget ? 'is-target' : 'is-nontarget'}`
-  const circle = (target: 'TIME' | 'DISTANCE' | 'SPEED', id: string, label: string) => {
-    const active = view.activeTarget === target
-    return (
-      <button
-        className={`ctds-circle${active ? ' is-active' : ''}`}
-        id={id}
-        aria-pressed={active}
-        type="button"
-        onClick={() => apply({ type: 'setTarget', target })}
-      >
-        {label}
-      </button>
-    )
-  }
-
   return (
     <div className="ctds-app" ref={appRef}>
       <header className="ctds-header">
@@ -241,52 +237,38 @@ export default function PaceCalculator({ resetIcon }: { resetIcon: string }) {
           </main>
 
           <footer className="ctds-controls">
-            <div className="ctds-toggle-row">
-              <button
-                className={`ctds-toggle${view.metricActive ? ' is-active' : ''}`}
-                id="unitToggle"
-                type="button"
-                onClick={() => apply({ type: 'setUnit', unit: 'METRIC' })}
-              >
-                Metric
-              </button>
-              <button
-                className={`ctds-toggle${view.imperialActive ? ' is-active' : ''}`}
-                id="imperialToggle"
-                type="button"
-                onClick={() => apply({ type: 'setUnit', unit: 'IMPERIAL' })}
-              >
-                Imperial
-              </button>
-            </div>
+            <Segmented
+              aria-label="Units"
+              size="l"
+              className="ctds-fill"
+              options={UNIT_OPTIONS}
+              value={view.imperialActive ? 'IMPERIAL' : 'METRIC'}
+              onChange={(unit) => apply({ type: 'setUnit', unit })}
+            />
 
-            <div className="ctds-circles">
-              {circle('TIME', 'timeBtn', 'Time')}
-              {circle('DISTANCE', 'distanceBtn', 'Distance')}
-              {circle('SPEED', 'speedBtn', 'Speed')}
-            </div>
+            <Segmented
+              aria-label="Solve for"
+              size="s"
+              className="ctds-fill ctds-targets"
+              options={TARGET_OPTIONS}
+              value={view.activeTarget ?? null}
+              onChange={(target) => apply({ type: 'setTarget', target })}
+            />
 
             <div className="ctds-reset">
-              <button
-                className="ctds-reset-btn"
+              <Button
                 id="resetBtn"
-                type="button"
+                variant="ghost"
+                size="m"
+                icon={<Icon name="reset" />}
                 onMouseDown={startPress}
                 onTouchStart={startPress}
                 onMouseUp={releasePress}
                 onTouchEnd={releasePress}
                 onMouseLeave={cancelPress}
               >
-                <span className="ctds-reset-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 11 11"
-                    fill="currentColor"
-                    shapeRendering="crispEdges"
-                    dangerouslySetInnerHTML={{ __html: resetIcon }}
-                  />
-                </span>
-                <span className="ctds-reset-text">Reset</span>
-              </button>
+                Reset
+              </Button>
             </div>
           </footer>
         </div>
