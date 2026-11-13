@@ -1,18 +1,11 @@
 # DTS-Calc
 
-**Distance–Time–Speed calculator for runners.** Features two distinct modes: a **Single** pace calculator (enter any two of time, distance, or speed/pace to compute the third) and a **Multi** pace workout planner (upload a GPX route, divide it into segments, and plan varying paces across elevation profiles). Metric and imperial units. Static HTML with modular ES modules. Mobile-first layout with responsive design.
+**Distance–Time–Speed calculator for runners.** A single pace calculator: enter any two of time, distance, or speed/pace to compute the third. Metric and imperial units. Static HTML with modular ES modules. Mobile-first layout with responsive design.
 
 ## Features
 
-- **Two calculation modes**: Single pace (classic calculator) and Multi pace (GPX route planner)
-- **Single Mode**:
-  - Four linked fields: Time (HH:MM:SS), Distance (KM/MI), Speed (KM/H or MPH), Pace (MIN/KM or MIN/MI)
-  - Target selector: Time, Distance, or Speed — the selected target is computed from the others
-- **Multi Mode**:
-  - GPX Upload: Parse `.gpx` routes (5km to 45km) into 100m pace blocks
-  - Elevation Chart: Visualise the route's elevation profile
-  - Pace Zones: Select segments of the route and assign distinct paces to plan your final finishing time
-  - Zone Controls: `+ Add Zone` and `Delete` actions to manage pace zones
+- Four linked fields: Time (HH:MM:SS), Distance (KM/MI), Speed (KM/H or MPH), Pace (MIN/KM or MIN/MI)
+- Target selector: Time, Distance, or Speed. The selected target is computed from the others
 - Unit toggle: Metric (km, km/h, min/km) or Imperial (mi, mph, min/mi)
 - Smart input: digits auto-format to time (e.g. `123456` → `01:23:45`) or pace (e.g. `530` → `05:30`)
 - LocalStorage persistence for calculator state
@@ -36,15 +29,9 @@
 ```mermaid
 flowchart TB
     subgraph UI [UI Layer]
-        Mode[Mode Toggle]
-        subgraph SingleUI [Single Mode]
+        subgraph SingleUI [Calculator]
             Fields[Fields: Time/Dist/Speed/Pace]
             Circles[Target Circles]
-        end
-        subgraph MultiUI [Multi Mode]
-            Upload[GPX Upload]
-            Chart[Elevation Chart]
-            Zones[Pace Zones]
         end
         Toggles[Unit Toggle]
         Reset[Reset Buttons]
@@ -54,25 +41,16 @@ flowchart TB
         Calculator[calculator.js]
         Normalize[normalize.js]
         Convert[convert.js]
-        GPX[gpx.js]
-        Multi[multi-pace.js]
     end
 
     subgraph Storage [Local Storage]
         LS[(localStorage)]
     end
 
-    Mode --> Calculator
     SingleUI --> Calculator
-    MultiUI --> Multi
-    Upload --> GPX
-    GPX --> Multi
     Calculator --> Normalize
     Calculator --> Convert
-    Multi --> Convert
-    Multi --> Normalize
     Calculator --> LS
-    Multi --> LS
 ```
 
 ## Directory Structure
@@ -87,9 +65,7 @@ DTS-Calc/
 │   ├── calculator.js
 │   ├── viewport-lock.js       # Keeps the fixed app above the keyboard
 │   ├── normalize.js
-│   ├── convert.js
-│   ├── gpx.js
-│   └── multi-pace.js
+│   └── convert.js
 ├── assets/
 │   ├── icon.svg               # 8×8 header glyph (transparent, black pixels)
 │   ├── dts-calc-favicon.svg   # Browser-tab icon (10×10, white on #C20707)
@@ -120,24 +96,20 @@ Home-screen and installed-app icons are a separate tile: the 8×8 glyph in white
 
 ## Data Flow and Compute Model
 
-- **Modes**: Toggling Single/Multi switches the UI shell and initializes the respective persistence logic.
-- **Single Mode**:
+- **Calculator**:
   - **Input**: User edits a non-target field → debounced `compute()` (200ms)
   - **Blur**: Normalize value (time/pace auto-format from digits), then `compute()`
   - **Target**: Time, Distance, or Speed — target field is read-only; others drive it
   - **Speed vs Pace**: When both time and distance exist, speed and pace stay in sync; `lastEdited` (PACE or SPEED) decides which drives the other
-- **Multi Mode**:
-  - **GPX Data**: GPX strings parsed and downsampled to 100m chunks. Elevation mapped onto segments.
-  - **Planner**: Users define distinct paces for groups of segments ("Zones"), and a total run time is computed by accumulating segment durations.
-- **Persistence**: `saveState()` / `loadState()` applied on init, compute, clear, and reset events for both modes separately.
+- **Persistence**: `saveState()` / `loadState()` applied on init, compute, clear, and reset events. On load the app also removes two keys left by the old Multi mode, once.
 
 ## Viewport and scrolling
 
-iOS 26 draws a frosted scroll-edge over the header of an installed home-screen app when `html` / `body` can scroll. That was happening here because `.ctds-multi-shell` was `100dvh` *under* the header (about 82px past the viewport) and the chart height subtracted a hardcoded `--mp-header-h` of 48px.
+iOS 26 draws a frosted scroll-edge over the header of an installed home-screen app when `html` / `body` can scroll.
 
-`html` and `body` now fill the viewport with `overflow: hidden` and `overscroll-behavior: none` (no rubber-band). The header stays a flex row at the top of `.ctds-app`, padded by the existing safe-area inset. `.ctds-scroll` is the only scroller (`overflow-y: auto`, `overscroll-behavior: contain`). Multi mode fills the space under the header when it fits. On a short or landscape screen the elevation panel keeps a minimum height and `.ctds-scroll` moves so the totals, chart, and footer stay reachable. `viewport-fit=cover` lets the existing safe-area padding clear the status bar. `theme-color` is the solid app red and there is no status-bar meta — neither one is the frost.
+`html` and `body` now fill the viewport with `overflow: hidden` and `overscroll-behavior: none` (no rubber-band). The header stays a flex row at the top of `.ctds-app`, padded by the existing safe-area inset. `.ctds-scroll` is the only scroller (`overflow-y: auto`, `overscroll-behavior: contain`). On a short or landscape screen `.ctds-scroll` moves so the fields and footer stay reachable. `viewport-fit=cover` lets the existing safe-area padding clear the status bar. `theme-color` is the solid app red and there is no status-bar meta — neither one is the frost.
 
-When the keyboard opens, `viewport-lock.js` sizes the app to the visible viewport so inputs and the pace sheet stay reachable. The document does not scroll.
+When the keyboard opens, `viewport-lock.js` sizes the app to the visible viewport so inputs stay reachable. The document does not scroll.
 
 ## Key Concepts
 
@@ -163,7 +135,7 @@ After editing `css/styles.css` or any other shell file, run `npm run build`. Tha
 
 The home-screen icon opens `start_url` `/`, which is inside manifest `scope` `/`. There is no redirect. `index.html` contains the full stylesheet, so the first paint does not wait on a second CSS request or on `fonts.googleapis.com`. JetBrains Mono is a self-hosted latin subset with `font-display: swap` (the face is discovered in that first HTML response, so it is not preloaded). The font file's weight axis is 400–800 and the face exposes that range. Text uses `monospace` until the file arrives, then the same family and tabular figures as before.
 
-`sw.js` is registered from the `load` event. It is cache-first for one whole shell (HTML, JS, font, icons). The build hash in the cache name is the hash of those files, stamped by `npm run build`, so a deploy installs a new worker that precaches the full list. Cached HTML points its scripts and font at `/b/<hash>/...`. Icons and the manifest stay on stable URLs such as `/assets/apple-touch-icon.png` and `/manifest.json`, so a home-screen fetch that does not go through the worker still finds them. `vercel.json` rewrites `/b/<hash>/...` to the same file in `dist/`. A later script request is served from that build's cache, including Multi opened after the worker process has stopped. If that older cache has been evicted, the request falls through to the current file until the next navigation. A navigation also refetches the whole list with `cache: 'no-cache'` into a new cache and publishes it only when every file is stored. If the current build cache is missing while its meta entry remains, that launch reads the shell from the network and stores the cache again. The open that discovers the deploy keeps the previous shell, including Multi if it is opened later. The second launch after the deploy runs the new shell. Activate deletes caches from other builds once no open page still needs them; which page needs which build is stored in the cache, not only in the worker process. The worker does not reload open pages. `css/styles.css` is not requested at runtime, so it is not part of the shell. `vercel.json` sends `Cache-Control: no-cache` for `/sw.js` so the browser can detect a new worker script.
+`sw.js` is registered from the `load` event. It is cache-first for one whole shell (HTML, JS, font, icons). The build hash in the cache name is the hash of those files, stamped by `npm run build`, so a deploy installs a new worker that precaches the full list. Cached HTML points its scripts and font at `/b/<hash>/...`. Icons and the manifest stay on stable URLs such as `/assets/apple-touch-icon.png` and `/manifest.json`, so a home-screen fetch that does not go through the worker still finds them. `vercel.json` rewrites `/b/<hash>/...` to the same file in `dist/`. A later script request is served from that build's cache, including after the worker process has stopped. If that older cache has been evicted, the request falls through to the current file until the next navigation. A navigation also refetches the whole list with `cache: 'no-cache'` into a new cache and publishes it only when every file is stored. If the current build cache is missing while its meta entry remains, that launch reads the shell from the network and stores the cache again. The open that discovers the deploy keeps the previous shell. The second launch after the deploy runs the new shell. Activate deletes caches from other builds once no open page still needs them; which page needs which build is stored in the cache, not only in the worker process. The worker does not reload open pages. `css/styles.css` is not requested at runtime, so it is not part of the shell. `vercel.json` sends `Cache-Control: no-cache` for `/sw.js` so the browser can detect a new worker script.
 
 **Deploy to Vercel:**
 

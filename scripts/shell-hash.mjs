@@ -11,8 +11,6 @@ export const SHELL = [
     '/js/normalize.js',
     '/js/convert.js',
     '/js/viewport-lock.js',
-    '/js/multi-pace.js',
-    '/js/gpx.js',
     '/assets/fonts/jetbrains-mono-latin.woff2',
     '/assets/icon.svg',
     '/assets/dts-calc-favicon.svg',

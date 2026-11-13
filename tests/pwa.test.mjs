@@ -23,8 +23,6 @@ const TYPES = {
 
 const MARKERS = {
     '/js/calculator.js': 'calculator',
-    '/js/multi-pace.js': 'multi',
-    '/js/gpx.js': 'gpx',
 };
 
 function applyRevision(path, body, revision) {
@@ -207,25 +205,19 @@ async function installShell(context) {
 }
 
 async function markers(page) {
-    await page.locator('#modeMulti').click();
     await page.waitForFunction(() => {
         const rev = globalThis.__dtsRev;
-        return !!(rev && rev.calculator && rev.multi && rev.gpx);
+        return !!(rev && rev.calculator);
     });
     return page.evaluate(() => ({
         html: document.querySelector('meta[name="dts-shell"]').content,
         calculator: globalThis.__dtsRev.calculator,
-        multi: globalThis.__dtsRev.multi,
-        gpx: globalThis.__dtsRev.gpx,
-        mode: document.querySelector('#modeSingle').classList.contains('is-active') ? 'before-multi' : 'multi',
     }));
 }
 
 function assertVersion(found, version) {
     assert.equal(found.html, version, JSON.stringify(found));
     assert.equal(found.calculator, version);
-    assert.equal(found.multi, version);
-    assert.equal(found.gpx, version);
 }
 
 async function useCalculator(page) {
@@ -253,13 +245,8 @@ async function useCalculator(page) {
     await page.locator('#timeBtn').click();
     assert.equal(await page.locator('#timeBtn').getAttribute('aria-pressed'), 'true');
 
-    await page.locator('#modeMulti').click();
-    await page.locator('#uploadGpxBtn').waitFor({ state: 'visible' });
-    assert.equal(await page.locator('#multiPaceApp').isVisible(), true);
-    assert.equal(await page.locator('#singlePaceApp').isVisible(), false);
-    await page.locator('#modeSingle').click();
     assert.equal(await page.locator('#singlePaceApp').isVisible(), true);
-    assert.match(await page.locator('#modeSingle').getAttribute('class'), /is-active/);
+    assert.equal(await page.locator('.ctds-header-label').textContent(), 'DTS-Calc');
 }
 
 describe('pwa', { concurrency: 1 }, () => {
@@ -335,7 +322,6 @@ test('a deploy stays on one shell until the second launch', { timeout: 180000 },
         const { browser, context } = await mobile(browserType, userAgent);
         try {
             const installed = await installShell(context);
-            await installed.evaluate(() => localStorage.setItem('pace-mode', 'single'));
             await installed.waitForLoadState('networkidle');
             await installed.close();
 
@@ -343,7 +329,7 @@ test('a deploy stays on one shell until the second launch', { timeout: 180000 },
             const first = await context.newPage();
             await first.goto(base, { waitUntil: 'load', timeout: 30000 });
             assert.equal(await first.locator('meta[name="dts-shell"]').getAttribute('content'), 'A');
-            assert.match(await first.locator('#modeSingle').getAttribute('class'), /is-active/);
+            assert.equal(await first.locator('#singlePaceApp').isVisible(), true);
             await until(first, async () => {
                 const meta = await caches.open('dts-calc-meta');
                 const pointer = await meta.match('/active');
@@ -352,35 +338,30 @@ test('a deploy stays on one shell until the second launch', { timeout: 180000 },
                 const files = await Promise.all([
                     cache.match('/index.html'),
                     cache.match('/js/calculator.js'),
-                    cache.match('/js/multi-pace.js'),
-                    cache.match('/js/gpx.js'),
                 ]);
                 if (files.some((response) => !response)) return false;
                 const text = (await Promise.all(files.map((response) => response.text()))).join('\n');
                 const keys = await cache.keys();
-                return keys.length >= 19
+                return keys.length >= 17
                     && text.includes('content="B"')
-                    && text.includes('calculator:"B"')
-                    && text.includes('multi:"B"')
-                    && text.includes('gpx:"B"');
+                    && text.includes('calculator:"B"');
             }, 20000);
             assertVersion(await markers(first), 'A');
-            await first.evaluate(() => localStorage.setItem('pace-mode', 'single'));
             await first.close();
 
             const second = await context.newPage();
             await second.goto(base, { waitUntil: 'load', timeout: 30000 });
-            assert.match(await second.locator('#modeSingle').getAttribute('class'), /is-active/);
+            assert.equal(await second.locator('#singlePaceApp').isVisible(), true);
             assertVersion(await markers(second), 'B');
             const stale = await second.evaluate(async () => {
                 const found = [];
                 for (const key of await caches.keys()) {
                     const cache = await caches.open(key);
-                    for (const path of ['/', '/index.html', '/js/calculator.js', '/js/multi-pace.js', '/js/gpx.js']) {
+                    for (const path of ['/', '/index.html', '/js/calculator.js']) {
                         const response = await cache.match(path);
                         if (!response) continue;
                         const text = await response.text();
-                        if (text.includes('content="A"') || text.includes('calculator:"A"') || text.includes('multi:"A"') || text.includes('gpx:"A"')) {
+                        if (text.includes('content="A"') || text.includes('calculator:"A"')) {
                             found.push(`${key} ${path}`);
                         }
                     }
@@ -388,7 +369,6 @@ test('a deploy stays on one shell until the second launch', { timeout: 180000 },
                 return found;
             });
             assert.deepEqual(stale, []);
-            await second.locator('#modeSingle').click();
             await useCalculator(second);
             console.log(name, 'deploy shells match');
         } finally {
@@ -456,7 +436,6 @@ test('a stopped worker cannot mix a newer build into an old tab', { timeout: 180
         const { browser, context } = await mobile(browserType, userAgent);
         try {
             const tabA = await installShell(context);
-            await tabA.evaluate(() => localStorage.setItem('pace-mode', 'single'));
             const before = await tabA.evaluate(async () => {
                 const src = document.querySelector('script[type="module"]').getAttribute('src');
                 const boot = await fetch(new URL(src, location.href), { cache: 'no-store' }).then((response) => response.headers.get('x-dts-boot'));
@@ -475,8 +454,8 @@ test('a stopped worker cannot mix a newer build into an old tab', { timeout: 180
                 const pointer = await meta.match('/active');
                 if (!pointer) return false;
                 const cache = await caches.open((await pointer.text()).trim());
-                const multi = await cache.match('/js/multi-pace.js');
-                return !!(multi && (await multi.text()).includes('multi:"B"'));
+                const calculator = await cache.match('/js/calculator.js');
+                return !!(calculator && (await calculator.text()).includes('calculator:"B"'));
             }, 20000);
 
             await stopWorkers(context, tabA);
@@ -489,9 +468,8 @@ test('a stopped worker cannot mix a newer build into an old tab', { timeout: 180
             assertVersion(await markers(tabA), 'A');
             const scripts = await tabA.evaluate(() => performance.getEntriesByType('resource')
                 .map((entry) => entry.name)
-                .filter((url) => /\/js\/(?:calculator|multi-pace|gpx)\.js(?:\?|$)/.test(url)));
-            assert.ok(scripts.some((url) => url.includes('/js/multi-pace.js')), scripts.join('\n'));
-            assert.ok(scripts.some((url) => url.includes('/js/gpx.js')), scripts.join('\n'));
+                .filter((url) => /\/js\/calculator\.js(?:\?|$)/.test(url)));
+            assert.ok(scripts.some((url) => url.includes('/js/calculator.js')), scripts.join('\n'));
             const hashes = new Set(scripts.map((url) => {
                 const match = url.match(/\/b\/([0-9a-f]{20})\//);
                 return match ? match[1] : url;
@@ -502,6 +480,33 @@ test('a stopped worker cannot mix a newer build into an old tab', { timeout: 180
         } finally {
             await browser.close();
         }
+    }
+});
+test('an install that had Multi saved loads Single and clears the old keys', { timeout: 60000 }, async () => {
+    const { browser, context } = await mobile(chromium, CHROME_UA);
+    try {
+        const page = await context.newPage();
+        const problems = [];
+        page.on('pageerror', (error) => problems.push(error.message));
+        page.on('console', (message) => { if (message.type() === 'error') problems.push(message.text()); });
+        await page.goto(base, { waitUntil: 'load', timeout: 30000 });
+        await page.evaluate(() => {
+            localStorage.setItem('pace-mode', 'multi');
+            localStorage.setItem('multi-pace-state', '{"zones":[]}');
+            localStorage.setItem('pace-calculator-state', 'keep-me');
+        });
+        await page.reload({ waitUntil: 'load', timeout: 30000 });
+        assert.equal(await page.locator('#singlePaceApp').isVisible(), true);
+        assert.equal(await page.locator('#modeSingle, #modeMulti').count(), 0);
+        const stored = await page.evaluate(() => ({
+            mode: localStorage.getItem('pace-mode'),
+            state: localStorage.getItem('multi-pace-state'),
+            calculator: localStorage.getItem('pace-calculator-state'),
+        }));
+        assert.deepEqual(stored, { mode: null, state: null, calculator: 'keep-me' });
+        assert.deepEqual(problems, []);
+    } finally {
+        await browser.close();
     }
 });
 });

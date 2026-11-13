@@ -412,64 +412,13 @@ class PaceCalculator {
 
 document.addEventListener('DOMContentLoaded', () => {
     bindViewportLock();
-    const calculator = new PaceCalculator();
+    new PaceCalculator();
 
-    const modeSingle = document.getElementById('modeSingle');
-    const modeMulti = document.getElementById('modeMulti');
-    const singleApp = document.getElementById('singlePaceApp');
-    const multiApp = document.getElementById('multiPaceApp');
-    const announcer = document.getElementById('ann');
-
-    if (!modeSingle || !modeMulti || !singleApp || !multiApp || !announcer) {
-        return;
+    // Multi mode was removed. Clear its leftover saved data once, on load.
+    try {
+        localStorage.removeItem('multi-pace-state');
+        localStorage.removeItem('pace-mode');
+    } catch {
+        // Storage can be blocked; nothing to clean in that case.
     }
-
-    let multiController = null;
-    let multiModulePromise = null;
-
-    function announce(message) {
-        announcer.textContent = message;
-    }
-
-    async function ensureMultiController() {
-        if (multiController) {
-            return multiController;
-        }
-
-        if (!multiModulePromise) {
-            multiModulePromise = import('./multi-pace.js');
-        }
-
-        const { initMultiPaceApp } = await multiModulePromise;
-        multiController = initMultiPaceApp({
-            root: multiApp,
-            storageKey: 'multi-pace-state',
-            announce,
-            getSeedPace: () => calculator.getSeedPace(),
-        });
-        return multiController;
-    }
-
-    async function setMode(mode) {
-        const isMulti = mode === 'multi';
-        document.body.classList.toggle('is-multi-pace', isMulti);
-        singleApp.hidden = isMulti;
-        multiApp.hidden = !isMulti;
-        modeSingle.classList.toggle('is-active', !isMulti);
-        modeMulti.classList.toggle('is-active', isMulti);
-        localStorage.setItem('pace-mode', isMulti ? 'multi' : 'single');
-
-        if (isMulti) {
-            const controller = await ensureMultiController();
-            controller.activate();
-        } else if (multiController) {
-            multiController.deactivate();
-        }
-    }
-
-    modeSingle.addEventListener('click', () => { void setMode('single'); });
-    modeMulti.addEventListener('click', () => { void setMode('multi'); });
-
-    const savedMode = localStorage.getItem('pace-mode') || 'single';
-    void setMode(savedMode);
 });
