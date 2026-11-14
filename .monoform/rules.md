@@ -10,10 +10,10 @@
 
 - Monoform has **no official palette**. Each app owns its colours. Every app theme fills the same role names: `bg`, `surface`, `border`, `text-primary`, `text-secondary`, `text-disabled`, `accent`, `on-accent`, `warn`, `error`, `overlay`. Resolve `color.{mode}.<role>` from the active app theme (`tokens.json` → `color.themes`)
 - Never hard-code a hex in a component. Reference the role
-- `accent`, `warn`, `error` are optional per app. No accent → focus ring and primary fills use `text-primary`, label uses `bg`
-- Contrast tiers (APCA Lc): `text-primary` ≥ 90 (500 weight may drop to 75), `text-secondary` ≥ 75, `border` ≥ 15
-- Fill labels: text on `accent`, `warn`, `error` fills uses `on-accent`, always weight 500, target Lc 75. Fills that miss it are listed as known deviations in `tokens.json`, never silently accepted
-- `text-disabled` is for disabled controls and labels only. It is exempt from readability (Lc 15 floor so it still shows). Never put real information in it. There is no "muted", "faint" or "dimmed" text tier
+- `accent`, `warn`, `error` are optional per app. No accent → the focus ring uses `text-primary`. Buttons do not read `accent` (see Button)
+- Contrast has no tiers and no tool. It is judged by eye as each app is made.
+- Fill labels: text on `accent`, `warn`, `error` fills uses `on-accent`, always weight 500
+- `text-disabled` is for disabled controls and labels only. Never put real information in it. There is no "muted", "faint" or "dimmed" text tier
 - `error` → use ONLY for: destructive actions, validation errors, critical alerts. Do NOT use for warnings, info, empty or loading states
 - `warn` → cautions. Always add an icon or the word; never colour only
 - No gradients — none, ever
@@ -32,11 +32,10 @@
   - 500 → app names, labels, nav items
   - 700 → brand name, headings, small labels
 - Sizes: **rem only**, from the scale (1rem × 1.125ᵗ, t-shirt names): `xs` 0.7901 · `s` 0.8889 · `m` 1 · `l` 1.125 · `xl` 1.2656 · `2xl` 1.4238 · `3xl` 1.6018 · `4xl` 1.802 · `5xl` 2.0273. No other sizes, no px. Exceptions: 1px borders, 9999px pills.
-- `xs` is reserved (no colour pair passes APCA at that size). `s` is for labels/metadata only: weight 700, `text-primary`. Weight 200 only from `5xl`.
+- `xs` is reserved. `s` is for labels/metadata only: weight 700, `text-primary`. Weight 200 only from `5xl`.
 - Line height comes from the size token (rem). No unitless or px overrides.
 - Tracking (t-shirt names): `m` = 0 default · `l` = 0.05em uppercase `s` labels only · `s` = -0.01em on `3xl` and up only. Nothing else.
 - No italics in UI — italics only in taglines and block quotes
-- Contrast is **APCA**, not WCAG ratios: body 16px/400 ≥ Lc 90 · 16px/500 ≥ Lc 75 · large (`3xl`+) ≥ Lc 60 · weight 200 ≥ Lc 90 · non-text ≥ Lc 15. Check with `apca-w3`.
 
 ---
 
@@ -76,11 +75,11 @@
 ### Button
 A button is **style × size × content**. Pick one of each.
 
-- **Style:** `primary` (solid), `secondary` (1px border), `ghost` (no border). One primary per view max. Fill = `accent`, label = `on-accent` (no accent: fill = `text-primary`, label = `bg`). No hover colour change beyond what the role set allows: hover swaps to the `surface` fill on secondary/ghost.
+- **Style:** `primary` (solid), `secondary` (1px border), `ghost` (no border). One primary per view max. **Colour is not tied to the app's roles.** Primary fill = `text-primary`, label = `bg`; secondary border = `border`; hover on secondary/ghost swaps to `surface` (a variable); primary has no hover change. An app that wants other colours sets the Button variables (`--mf-button-primary-bg`, `--mf-button-primary-fg`, `--mf-button-fg`, `--mf-button-border-color`, `--mf-button-hover-bg`, `--mf-button-focus-color`) and documents the choice in its own notes. It does not override `.mf-button` rules.
 - **Size** = control height: `xs` 1.5rem · `s` 2rem · **`m` 2.5rem (default)** · `l` 3rem. Min tap target 2.75rem, always: extend with padding, the caption, or a centred `::after` at `max(100%, 2.75rem)` (needs `position: relative`). Small controls placed side by side may have overlapping hit areas; keep gaps ≥ 0.5rem.
   - Label type: `xs`/`s` → type `s`, weight 700 · `m` → type `m`, weight 500 · `l` → type `l`, weight 500. Never 600.
   - Horizontal padding: `xs` 0.5rem · `s` 0.75rem · `m` 1rem · `l` 1.5rem. Gap between icon and label: `2` (0.5rem).
-  - Icon size: 11px at `xs`/`s`, 22px at `m`/`l` (whole multiples of the 11px pixel grid)
+  - Icon size: 11px at `xs`, 22px at `s`/`m`/`l` (whole multiples of the 11px pixel grid). Decided by Hafiz, 14 Nov 2026: 11px was too small to use at `s`.
   - In code: `Button` and `IconButton` from `@monoform/ui` (`.monoform/ui/`). Do not write your own button.
 - **Shape comes from what is inside the button.** Style does not change it.
   | Inside the button | Shape |
@@ -174,7 +173,6 @@ Part of the spec, not an extra. Use the native element first (`<button>`, `<dial
 - **Keyboard:** everything reachable and operable by keyboard, in visual order. Esc closes modals and returns focus to the control that opened them.
 - **Focus is always visible:** 1px accent ring, 0.125rem offset. Never `outline: none` without a replacement.
 - **Touch:** minimum hit area 2.75rem, whatever the visible size.
-- **Contrast:** APCA targets in Typography, checked per size and weight.
 - **Colour is never the only signal** (selected, error, disabled also change shape, weight, border or text).
 - **Motion:** `prefers-reduced-motion` turns every animation off; the marquee slows to 3× duration instead. Moving content that runs over five seconds can be paused (hover, focus, tap)
 - **Language and direction:** Arabic-script text carries `lang="ar"` and `dir="rtl"`; set on the element, not the page.
