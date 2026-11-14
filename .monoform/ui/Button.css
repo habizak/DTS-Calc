@@ -1,7 +1,14 @@
 /* Monoform Button. Spec: agent/rules.md "Button". Style (primary | secondary | ghost) x size (xs | s | m | l)
    x content. Shape follows content: text inside means a rectangle, icon only means a circle.
-   Only Monoform variables are used here. No accent role in the app theme: the primary fill is text-primary
-   and its label is bg. */
+   Only Monoform variables are used here.
+   Colour is not tied to the app's roles. Each colour is a Button variable with a neutral default, so the Button
+   works with no setup. An app that wants other colours sets the variables (on :root or on a wrapper):
+     --mf-button-primary-bg      fill of a primary button          (default: text-primary)
+     --mf-button-primary-fg      label on a primary button         (default: bg)
+     --mf-button-fg              label of secondary and ghost      (default: text-primary)
+     --mf-button-border-color    border of a secondary button      (default: border)
+     --mf-button-hover-bg        hover fill, secondary and ghost   (default: surface)
+     --mf-button-focus-color     focus ring                        (default: accent if the app has one, else text-primary) */
 .mf-button {
   --mf-button-h: var(--control-m);
   --mf-button-px: var(--space-4);
@@ -24,13 +31,13 @@
   border: 1px solid transparent;
   border-radius: 0;
   background: transparent;
-  color: var(--color-text-primary);
+  color: var(--mf-button-fg, var(--color-text-primary));
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 .mf-button--xs { --mf-button-h: var(--control-xs); --mf-button-px: var(--space-2); --mf-button-text: var(--text-s); --mf-button-weight: 700; --mf-button-icon: 0.6875rem; }
-.mf-button--s { --mf-button-h: var(--control-s); --mf-button-px: var(--space-3); --mf-button-text: var(--text-s); --mf-button-weight: 700; --mf-button-icon: 0.6875rem; }
+.mf-button--s { --mf-button-h: var(--control-s); --mf-button-px: var(--space-3); --mf-button-text: var(--text-s); --mf-button-weight: 700; --mf-button-icon: 1.375rem; }
 .mf-button--m { --mf-button-h: var(--control-m); --mf-button-px: var(--space-4); --mf-button-text: var(--text-m); --mf-button-weight: 500; }
 .mf-button--l { --mf-button-h: var(--control-l); --mf-button-px: var(--space-6); --mf-button-text: var(--text-l); --mf-button-weight: 500; }
 
@@ -45,18 +52,18 @@
   transform: translate(-50%, -50%);
 }
 
-/* Styles. Fill is the accent role when the app has one; without it, text-primary with a bg label. */
+/* Styles. The primary fill and label are the Button's own variables, not the accent role. */
 .mf-button--primary {
-  background: var(--color-accent, var(--color-text-primary));
-  color: var(--color-on-accent, var(--color-bg));
+  background: var(--mf-button-primary-bg, var(--color-text-primary));
+  color: var(--mf-button-primary-fg, var(--color-bg));
 }
-.mf-button--secondary { border-color: var(--color-border); }
+.mf-button--secondary { border-color: var(--mf-button-border-color, var(--color-border)); }
 .mf-button--ghost { border-color: transparent; }
 
-/* Hover swaps to the surface fill on secondary and ghost. Never on touch, so a tap leaves nothing behind. */
+/* Hover swaps to the hover fill (surface by default) on secondary and ghost. Never on touch, so a tap leaves nothing behind. */
 @media (hover: hover) and (pointer: fine) {
   .mf-button--secondary:not(:disabled):hover,
-  .mf-button--ghost:not(:disabled):hover { background: var(--color-surface); }
+  .mf-button--ghost:not(:disabled):hover { background: var(--mf-button-hover-bg, var(--color-surface)); }
 }
 
 /* Icon only: a circle, 1:1 at the control height. The icon is the whole content. */
@@ -77,6 +84,6 @@
 
 .mf-button:disabled { opacity: 0.4; cursor: default; }
 .mf-button:focus-visible {
-  outline: 1px solid var(--color-accent, var(--color-text-primary));
+  outline: 1px solid var(--mf-button-focus-color, var(--color-accent, var(--color-text-primary)));
   outline-offset: var(--space-0-5);
 }
