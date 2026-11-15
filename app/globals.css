@@ -161,7 +161,7 @@ button {
     white-space: nowrap;
     display: flex;
     justify-content: flex-end;
-    gap: var(--space-4);
+    gap: var(--space-2);
 }
 
 /* The unit not in use gets the Monoform disabled look (opacity 0.4), so it still reads in a dimmed target row. */
