@@ -17,11 +17,31 @@ describe('the shared controls on the calculator screen', () => {
     const units = screen.getByRole('radiogroup', { name: 'Units' })
     expect(within(units).getAllByRole('radio').map((r) => (r as HTMLInputElement).value)).toEqual(['METRIC', 'IMPERIAL'])
     expect(screen.getByRole('radio', { name: 'Metric' })).toBeChecked()
-    expect(document.getElementById('distanceLabel')).toHaveTextContent('KM')
+    expect(document.getElementById('distanceLabel')).toHaveTextContent('KMMI')
+    expect(document.querySelector('#distanceLabel .is-off')).toHaveTextContent('MI')
     fireEvent.click(screen.getByRole('radio', { name: 'Imperial' }))
     expect(screen.getByRole('radio', { name: 'Imperial' })).toBeChecked()
-    expect(document.getElementById('distanceLabel')).toHaveTextContent('MI')
+    expect(document.querySelector('#distanceLabel .is-off')).toHaveTextContent('KM')
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}').unitSystem).toBe('IMPERIAL')
+  })
+
+  it('units: the toggle sits in the header, not the footer', async () => {
+    await mount()
+    const units = screen.getByRole('radiogroup', { name: 'Units' })
+    expect(units.closest('header')).not.toBeNull()
+    expect(units.closest('footer')).toBeNull()
+  })
+
+  it('format: one-digit distance and speed show two digits, but the saved value is unchanged', async () => {
+    await mount()
+    const distance = document.getElementById('distanceInput')!
+    fireEvent.change(distance, { target: { value: '5' } })
+    fireEvent.blur(distance)
+    expect(distance).toHaveValue('05.00')
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}').values.distance).toBe('5.00')
+    // Typing on top of the padded value does not carry the zero into the state.
+    fireEvent.change(distance, { target: { value: '05.001' } })
+    expect(distance).toHaveValue('5.001')
   })
 
   it('targets: Time, Distance and Speed are one radio group; choosing one disables that field', async () => {

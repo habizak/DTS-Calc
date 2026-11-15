@@ -16,6 +16,7 @@ import {
   reduce,
   serializeState,
 } from '../lib/pure/calculator'
+import { UNIT_LABELS, displayValue, stripDisplayPadding } from '../lib/pure/displayFormat'
 
 const UNIT_OPTIONS = [
   { value: 'METRIC', label: 'Metric' },
@@ -55,6 +56,20 @@ function writeSaved(state: CalculatorState): void {
   } catch {
     // Storage can be blocked. The calculator still works for this visit.
   }
+}
+
+/** Both unit names side by side, metric first. The unit not in use is dimmed and hidden from screen readers. */
+function UnitLabel({ units, imperial }: { units: { metric: string; imperial: string }; imperial: boolean }) {
+  return (
+    <>
+      <span className={imperial ? 'ctds-unit is-off' : 'ctds-unit'} aria-hidden={imperial || undefined}>
+        {units.metric}
+      </span>
+      <span className={imperial ? 'ctds-unit' : 'ctds-unit is-off'} aria-hidden={!imperial || undefined}>
+        {units.imperial}
+      </span>
+    </>
+  )
 }
 
 /** The one screen. Markup and class names match the old index.html; the rules live in lib/pure. */
@@ -102,7 +117,7 @@ export default function PaceCalculator() {
   }, [clearComputeTimer])
 
   const onEdit = (field: Field) => (event: ChangeEvent<HTMLInputElement>) => {
-    apply({ type: 'edit', field, value: event.target.value })
+    apply({ type: 'edit', field, value: stripDisplayPadding(field, event.target.value) })
     clearComputeTimer()
     computeTimer.current = setTimeout(() => apply({ type: 'compute' }), DEBOUNCE_MS)
   }
@@ -152,6 +167,13 @@ export default function PaceCalculator() {
           </span>
           <span className="ctds-header-label">DTS-Calc</span>
         </span>
+        <Segmented
+          aria-label="Units"
+          size="xs"
+          options={UNIT_OPTIONS}
+          value={view.imperialActive ? 'IMPERIAL' : 'METRIC'}
+          onChange={(unit) => apply({ type: 'setUnit', unit })}
+        />
       </header>
 
       <div className="ctds-scroll">
@@ -169,7 +191,7 @@ export default function PaceCalculator() {
                 aria-describedby="timeLabel"
                 inputMode="numeric"
                 pattern="\d{1,2}:\d{2}:\d{2}"
-                value={state.values.time}
+                value={displayValue('time', state.values.time)}
                 disabled={view.fields.time.disabled}
                 aria-disabled={view.fields.time.disabled}
                 onChange={onEdit('time')}
@@ -179,7 +201,7 @@ export default function PaceCalculator() {
 
             <div className={fieldClass('distance', 'distance')}>
               <label className="ctds-label" htmlFor="distanceInput" id="distanceLabel">
-                {view.distanceLabel}
+                <UnitLabel units={UNIT_LABELS.distance} imperial={view.imperialActive} />
               </label>
               <input
                 type="text"
@@ -188,7 +210,7 @@ export default function PaceCalculator() {
                 placeholder="00.00"
                 aria-describedby="distanceLabel"
                 inputMode="decimal"
-                value={state.values.distance}
+                value={displayValue('distance', state.values.distance)}
                 disabled={view.fields.distance.disabled}
                 aria-disabled={view.fields.distance.disabled}
                 onChange={onEdit('distance')}
@@ -198,7 +220,7 @@ export default function PaceCalculator() {
 
             <div className={fieldClass('speed', 'speed')}>
               <label className="ctds-label" htmlFor="speedInput" id="speedLabel">
-                {view.speedLabel}
+                <UnitLabel units={UNIT_LABELS.speed} imperial={view.imperialActive} />
               </label>
               <input
                 type="text"
@@ -207,7 +229,7 @@ export default function PaceCalculator() {
                 placeholder="00.00"
                 aria-describedby="speedLabel"
                 inputMode="decimal"
-                value={state.values.speed}
+                value={displayValue('speed', state.values.speed)}
                 disabled={view.fields.speed.disabled}
                 aria-disabled={view.fields.speed.disabled}
                 onChange={onEdit('speed')}
@@ -217,7 +239,7 @@ export default function PaceCalculator() {
 
             <div className={fieldClass('pace', 'pace')}>
               <label className="ctds-label" htmlFor="paceInput" id="paceLabel">
-                {view.paceLabel}
+                <UnitLabel units={UNIT_LABELS.pace} imperial={view.imperialActive} />
               </label>
               <input
                 type="text"
@@ -227,7 +249,7 @@ export default function PaceCalculator() {
                 aria-describedby="paceLabel"
                 inputMode="numeric"
                 pattern="\d{1,2}:\d{2}"
-                value={state.values.pace}
+                value={displayValue('pace', state.values.pace)}
                 disabled={view.fields.pace.disabled}
                 aria-disabled={view.fields.pace.disabled}
                 onChange={onEdit('pace')}
@@ -237,15 +259,6 @@ export default function PaceCalculator() {
           </main>
 
           <footer className="ctds-controls">
-            <Segmented
-              aria-label="Units"
-              size="l"
-              className="ctds-fill"
-              options={UNIT_OPTIONS}
-              value={view.imperialActive ? 'IMPERIAL' : 'METRIC'}
-              onChange={(unit) => apply({ type: 'setUnit', unit })}
-            />
-
             <Segmented
               aria-label="Solve for"
               size="s"

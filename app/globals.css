@@ -16,10 +16,12 @@
     --page-padding-top: max(var(--space-4), env(safe-area-inset-top));
     --page-padding-bottom: var(--space-6);
     --section-gap: var(--space-4);
-    /* The big numbers are display type: above the 5xl step on purpose. Floor is 5xl. */
-    --single-value-size: clamp(var(--text-5xl), 13vw, 3.375rem);
+    /* The big numbers are display type: above the 5xl step on purpose. One shared size, set so
+       the widest value (00:00:00, 8 characters) fills the row: 8 x (0.6em advance - 0.01em tracking)
+       = 4.72em, so 100cqw / 4.72 = 21.1cqw. The dvh cap keeps four rows on short screens. */
+    --single-value-size: clamp(var(--text-5xl), min(21cqw, 9dvh), 5rem);
     --single-value-line: 0.96;
-    --single-field-gap: clamp(var(--space-4), 4vh, var(--space-8));
+    --single-field-gap: clamp(var(--space-2), 2.5dvh, var(--space-6));
     --single-footer-gap: var(--space-4);
 }
 
@@ -139,24 +141,32 @@ button {
     gap: var(--single-field-gap);
     min-height: 0;
     padding: var(--space-2) 0 var(--space-3);
+    /* Lets the numbers size themselves from the row width (cqw). */
+    container-type: inline-size;
 }
 
+/* Label on top, number below, both flush right, both the full width of the screen. */
 .ctds-field {
-    display: grid;
-    grid-template-columns: minmax(var(--space-16), auto) minmax(0, 1fr);
-    align-items: end;
-    column-gap: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
     width: 100%;
 }
 
 .ctds-label {
-    justify-self: start;
-    align-self: end;
+    text-align: right;
     font-size: var(--text-s);
     line-height: 1.15;
     color: var(--color-text-secondary);
-    padding-bottom: var(--space-2);
     white-space: nowrap;
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+}
+
+/* The unit not in use gets the Monoform disabled look (opacity 0.4), so it still reads in a dimmed target row. */
+.ctds-unit.is-off {
+    opacity: 0.4;
 }
 
 .ctds-value {
@@ -170,22 +180,6 @@ button {
     line-height: var(--single-value-line);
     letter-spacing: -0.01em;
     caret-color: var(--color-text-primary);
-}
-
-.ctds-field--time .ctds-value {
-    max-width: 8.4ch;
-    justify-self: end;
-}
-
-.ctds-field--distance .ctds-value,
-.ctds-field--speed .ctds-value {
-    max-width: 5.65ch;
-    justify-self: end;
-}
-
-.ctds-field--pace .ctds-value {
-    max-width: 5.1ch;
-    justify-self: end;
 }
 
 .ctds-value::placeholder {
@@ -243,14 +237,14 @@ button {
     overflow: hidden;
 }
 
-@media (max-width: 420px) {
-    :root {
-        --single-value-size: clamp(var(--text-5xl), 12.4vw, 3.125rem);
-        --single-field-gap: clamp(var(--space-4), 3.8vh, var(--space-6));
-    }
+.ctds-header .mf-segmented {
+    flex-shrink: 0;
+}
 
-    .ctds-field {
-        grid-template-columns: minmax(var(--space-16), auto) minmax(0, 1fr);
-        column-gap: var(--space-3);
+/* Very short screens (iPhone SE 1st gen, 568px): shrink the numbers so four rows still fit without scrolling. */
+@media (max-height: 600px) {
+    :root {
+        --single-value-size: clamp(var(--text-5xl), min(21cqw, 7.6dvh), 5rem);
+        --single-field-gap: var(--space-2);
     }
 }
