@@ -155,7 +155,7 @@ export default function PaceCalculator() {
         </span>
         <Segmented
           aria-label="Units"
-          size="s"
+          size="xs"
           options={UNIT_OPTIONS}
           value={view.imperialActive ? 'IMPERIAL' : 'METRIC'}
           onChange={(unit) => apply({ type: 'setUnit', unit })}
