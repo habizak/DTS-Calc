@@ -16,6 +16,7 @@ import {
   reduce,
   serializeState,
 } from '../lib/pure/calculator'
+import { displayValue, stripDisplayPadding } from '../lib/pure/displayFormat'
 
 const UNIT_OPTIONS = [
   { value: 'METRIC', label: 'Metric' },
@@ -102,7 +103,7 @@ export default function PaceCalculator() {
   }, [clearComputeTimer])
 
   const onEdit = (field: Field) => (event: ChangeEvent<HTMLInputElement>) => {
-    apply({ type: 'edit', field, value: event.target.value })
+    apply({ type: 'edit', field, value: stripDisplayPadding(field, event.target.value) })
     clearComputeTimer()
     computeTimer.current = setTimeout(() => apply({ type: 'compute' }), DEBOUNCE_MS)
   }
@@ -152,6 +153,13 @@ export default function PaceCalculator() {
           </span>
           <span className="ctds-header-label">DTS-Calc</span>
         </span>
+        <Segmented
+          aria-label="Units"
+          size="s"
+          options={UNIT_OPTIONS}
+          value={view.imperialActive ? 'IMPERIAL' : 'METRIC'}
+          onChange={(unit) => apply({ type: 'setUnit', unit })}
+        />
       </header>
 
       <div className="ctds-scroll">
@@ -169,7 +177,7 @@ export default function PaceCalculator() {
                 aria-describedby="timeLabel"
                 inputMode="numeric"
                 pattern="\d{1,2}:\d{2}:\d{2}"
-                value={state.values.time}
+                value={displayValue('time', state.values.time)}
                 disabled={view.fields.time.disabled}
                 aria-disabled={view.fields.time.disabled}
                 onChange={onEdit('time')}
@@ -188,7 +196,7 @@ export default function PaceCalculator() {
                 placeholder="00.00"
                 aria-describedby="distanceLabel"
                 inputMode="decimal"
-                value={state.values.distance}
+                value={displayValue('distance', state.values.distance)}
                 disabled={view.fields.distance.disabled}
                 aria-disabled={view.fields.distance.disabled}
                 onChange={onEdit('distance')}
@@ -207,7 +215,7 @@ export default function PaceCalculator() {
                 placeholder="00.00"
                 aria-describedby="speedLabel"
                 inputMode="decimal"
-                value={state.values.speed}
+                value={displayValue('speed', state.values.speed)}
                 disabled={view.fields.speed.disabled}
                 aria-disabled={view.fields.speed.disabled}
                 onChange={onEdit('speed')}
@@ -227,7 +235,7 @@ export default function PaceCalculator() {
                 aria-describedby="paceLabel"
                 inputMode="numeric"
                 pattern="\d{1,2}:\d{2}"
-                value={state.values.pace}
+                value={displayValue('pace', state.values.pace)}
                 disabled={view.fields.pace.disabled}
                 aria-disabled={view.fields.pace.disabled}
                 onChange={onEdit('pace')}
@@ -237,15 +245,6 @@ export default function PaceCalculator() {
           </main>
 
           <footer className="ctds-controls">
-            <Segmented
-              aria-label="Units"
-              size="l"
-              className="ctds-fill"
-              options={UNIT_OPTIONS}
-              value={view.imperialActive ? 'IMPERIAL' : 'METRIC'}
-              onChange={(unit) => apply({ type: 'setUnit', unit })}
-            />
-
             <Segmented
               aria-label="Solve for"
               size="s"
