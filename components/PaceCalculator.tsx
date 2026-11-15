@@ -16,7 +16,7 @@ import {
   reduce,
   serializeState,
 } from '../lib/pure/calculator'
-import { displayValue, stripDisplayPadding } from '../lib/pure/displayFormat'
+import { UNIT_LABELS, displayValue, stripDisplayPadding } from '../lib/pure/displayFormat'
 
 const UNIT_OPTIONS = [
   { value: 'METRIC', label: 'Metric' },
@@ -56,6 +56,20 @@ function writeSaved(state: CalculatorState): void {
   } catch {
     // Storage can be blocked. The calculator still works for this visit.
   }
+}
+
+/** Both unit names side by side, metric first. The unit not in use is dimmed and hidden from screen readers. */
+function UnitLabel({ units, imperial }: { units: { metric: string; imperial: string }; imperial: boolean }) {
+  return (
+    <>
+      <span className={imperial ? 'ctds-unit is-off' : 'ctds-unit'} aria-hidden={imperial || undefined}>
+        {units.metric}
+      </span>
+      <span className={imperial ? 'ctds-unit' : 'ctds-unit is-off'} aria-hidden={!imperial || undefined}>
+        {units.imperial}
+      </span>
+    </>
+  )
 }
 
 /** The one screen. Markup and class names match the old index.html; the rules live in lib/pure. */
@@ -187,7 +201,7 @@ export default function PaceCalculator() {
 
             <div className={fieldClass('distance', 'distance')}>
               <label className="ctds-label" htmlFor="distanceInput" id="distanceLabel">
-                {view.distanceLabel}
+                <UnitLabel units={UNIT_LABELS.distance} imperial={view.imperialActive} />
               </label>
               <input
                 type="text"
@@ -206,7 +220,7 @@ export default function PaceCalculator() {
 
             <div className={fieldClass('speed', 'speed')}>
               <label className="ctds-label" htmlFor="speedInput" id="speedLabel">
-                {view.speedLabel}
+                <UnitLabel units={UNIT_LABELS.speed} imperial={view.imperialActive} />
               </label>
               <input
                 type="text"
@@ -225,7 +239,7 @@ export default function PaceCalculator() {
 
             <div className={fieldClass('pace', 'pace')}>
               <label className="ctds-label" htmlFor="paceInput" id="paceLabel">
-                {view.paceLabel}
+                <UnitLabel units={UNIT_LABELS.pace} imperial={view.imperialActive} />
               </label>
               <input
                 type="text"

@@ -17,10 +17,11 @@ describe('the shared controls on the calculator screen', () => {
     const units = screen.getByRole('radiogroup', { name: 'Units' })
     expect(within(units).getAllByRole('radio').map((r) => (r as HTMLInputElement).value)).toEqual(['METRIC', 'IMPERIAL'])
     expect(screen.getByRole('radio', { name: 'Metric' })).toBeChecked()
-    expect(document.getElementById('distanceLabel')).toHaveTextContent('KM')
+    expect(document.getElementById('distanceLabel')).toHaveTextContent('KMMI')
+    expect(document.querySelector('#distanceLabel .is-off')).toHaveTextContent('MI')
     fireEvent.click(screen.getByRole('radio', { name: 'Imperial' }))
     expect(screen.getByRole('radio', { name: 'Imperial' })).toBeChecked()
-    expect(document.getElementById('distanceLabel')).toHaveTextContent('MI')
+    expect(document.querySelector('#distanceLabel .is-off')).toHaveTextContent('KM')
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}').unitSystem).toBe('IMPERIAL')
   })
 

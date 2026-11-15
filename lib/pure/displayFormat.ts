@@ -18,3 +18,10 @@ export function stripDisplayPadding(field: Field, typed: string): string {
   if (field === 'distance' || field === 'speed') return typed.replace(LEADING_ZEROS, '')
   return typed
 }
+
+/** Both unit names for a field's label, metric first. The screen shows both and dims the one not in use. */
+export const UNIT_LABELS = {
+  distance: { metric: 'KM', imperial: 'MI' },
+  speed: { metric: 'KM/H', imperial: 'MPH' },
+  pace: { metric: 'MIN/KM', imperial: 'MIN/MI' },
+} as const
