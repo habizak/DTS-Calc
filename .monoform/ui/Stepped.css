@@ -18,6 +18,7 @@
 .mf-stepped--bottom { --mf-stepped-origin: 50% 100%; }
 .mf-stepped--left { --mf-stepped-origin: 0 50%; }
 .mf-stepped--right { --mf-stepped-origin: 100% 50%; }
+.mf-stepped--top-right { --mf-stepped-origin: 100% 0; }
 
 /* The background layer is the thing that grows. The content sits above it at its final size. */
 .mf-stepped__bg {

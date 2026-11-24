@@ -2,7 +2,7 @@ import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useSta
 import './Stepped.css'
 
 /** Where the layer grows from. The command bar is bottom. Stepped Out shrinks back to the same point. */
-export type SteppedDirection = 'center' | 'top' | 'bottom' | 'left' | 'right'
+export type SteppedDirection = 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-right'
 /** Speed follows the size of the thing: l (220ms) for surfaces across the full width or height of the screen, s (130ms) for everything else. */
 export type SteppedSpeed = 's' | 'l'
 /** How it leaves. out: permanent or large things (command bar, Focus mode, side panels). pop: small or transient things (modal, note, toast, cell). */
