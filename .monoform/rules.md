@@ -188,7 +188,7 @@ Stepped motion: every animation is a sequence of hard jumps, never a curve. Two 
 **Stepped In** — how things appear. The decorative background layer grows through four stages (width 2 / 28 / 55 / 82 / 100%, height 6 / 25 / 50 / 78 / 100%), each one a hard jump (`steps(1, end)` between keyframes). Text and hit areas stay at their final size. Then the text appears in one step (at 200ms, 40ms long), then each action pops in (scale 0.5 → 1, 40ms, `steps(2, end)`, first at 220ms, second at 280ms). These sequence times are absolute and the same everywhere: they do not scale with the duration. A 1px outline at 50% shows while growing.
 
 Stepped In and Out take two variables:
-- **Direction** — where it grows from: `center`, `top`, `bottom`, `left` or `right` (sets `transform-origin` to 50% 50%, 50% 0, 50% 100%, 0 50%, 100% 50%). The command bar is `bottom`. Stepped Out shrinks back to the same point
+- **Direction** — where it grows from: `center`, `top`, `bottom`, `left`, `right` or `top-right` (sets `transform-origin` to 50% 50%, 50% 0, 50% 100%, 0 50%, 100% 50%, 100% 0). The command bar is `bottom`. Stepped Out shrinks back to the same point
 - **Speed** — chosen by the object's size, never by hand: `l` 220ms or `s` 130ms (below)
 
 **Stepped Out** — Stepped In played backwards over the same duration. Text and actions hide at once, then the layer shrinks and the last frame is hidden (`opacity: 0; visibility: hidden`), so no stub is left on screen. Use it for **permanent or large** things: the command bar, Focus mode, side panels.
