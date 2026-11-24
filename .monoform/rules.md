@@ -8,7 +8,9 @@
 
 ## 1. Color
 
-- Monoform has **no official palette**. Each app owns its colours. Every app theme fills the same role names: `bg`, `surface`, `border`, `text-primary`, `text-secondary`, `text-disabled`, `accent`, `on-accent`, `warn`, `error`, `overlay`. Resolve `color.{mode}.<role>` from the active app theme (`tokens.json` → `color.themes`)
+- Monoform has **no official palette**. Each app owns its colours. Every app theme fills the same role names: `bg`, `header`, `surface`, `border`, `text-primary`, `text-secondary`, `text-disabled`, `accent`, `on-accent`, `warn`, `error`, `overlay`. Resolve `color.{mode}.<role>` from the active app theme (`tokens.json` → `color.themes`)
+- `header` is its own role for the header, the menu, and full-page surfaces such as the playlist and the editor. In ZKR-Countr dark it is a lighter panel than the home `bg`. Cards stay `surface`. In light mode it is the current light ground (the same value as `bg` where the header already uses the page colour), so light mode does not shift. Themes with no separate chrome set `header` equal to `bg`
+- An app whose header already uses another role keeps using that role. CMD-Note's header uses `surface`
 - Never hard-code a hex in a component. Reference the role
 - `accent`, `warn`, `error` are optional per app. No accent → the focus ring uses `text-primary`. Buttons do not read `accent` (see Button)
 - Contrast has no tiers and no tool. It is judged by eye as each app is made.
